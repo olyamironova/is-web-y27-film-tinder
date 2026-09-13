@@ -1,9 +1,22 @@
-<svg width="64" height="64" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-    <g transform="translate(10, 10)">
-        <rect x="5" y="25" width="50" height="35" rx="5" fill="#2c3e50" />
-        <rect x="0" y="5" width="55" height="12" rx="2" fill="#fd267a" transform="rotate(-15 5 25)" />
-        <rect x="10" y="6" width="8" height="10" fill="white" transform="rotate(-15 15 25)" />
-        <rect x="30" y="1" width="8" height="10" fill="white" transform="rotate(-15 35 20)" />
-        <path d="M30,52 C30,52 40,45 40,38 C40,34 37,32 34,32 C32,32 30,34 30,34 C30,34 28,32 26,32 C23,32 20,34 20,38 C20,45 30,52 30,52 Z" fill="white" />
-    </g>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ft" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FE3C72"/>
+      <stop offset="1" stop-color="#FF6036"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" rx="15" fill="url(#ft)"/>
+  <!-- киноакцент: перфорация плёнки по краям -->
+  <g fill="#ffffff" opacity="0.9">
+    <rect x="6" y="12" width="4" height="5" rx="1.2"/>
+    <rect x="6" y="24" width="4" height="5" rx="1.2"/>
+    <rect x="6" y="36" width="4" height="5" rx="1.2"/>
+    <rect x="6" y="48" width="4" height="5" rx="1.2"/>
+    <rect x="54" y="12" width="4" height="5" rx="1.2"/>
+    <rect x="54" y="24" width="4" height="5" rx="1.2"/>
+    <rect x="54" y="36" width="4" height="5" rx="1.2"/>
+    <rect x="54" y="48" width="4" height="5" rx="1.2"/>
+  </g>
+  <!-- сердце -->
+  <path d="M32 50 C32 50 15 39 15 27.5 C15 21.7 19.4 17.5 24.5 17.5 C28.2 17.5 30.9 19.8 32 22.4 C33.1 19.8 35.8 17.5 39.5 17.5 C44.6 17.5 49 21.7 49 27.5 C49 39 32 50 32 50 Z" fill="#ffffff"/>
 </svg>
