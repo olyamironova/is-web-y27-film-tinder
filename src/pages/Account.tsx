@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, Check, Clock, Heart, LogOut, Settings, ThumbsDown, UserMinus, UserPlus, Users, X } from 'lucide-react';
+import { Bookmark, Camera, Check, Clock, Heart, LogOut, Settings, ThumbsDown, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import type { Movie, User } from '../types';
 
@@ -105,6 +105,7 @@ export function Account() {
 
     const openLikes = () => showLikes('Нравится', api.myLikes, true);
     const openDislikes = () => showLikes('Дизлайки', api.myDislikes, true);
+    const openWatchlist = () => showLikes('Посмотреть позже', api.myWatchlist, true);
     const openFriendLikes = (friend: User) => showLikes(`Нравится · ${friend.name}`, () => api.friendLikes(friend.id), false);
 
     const undoSwipe = async (movieId: string) => {
@@ -179,6 +180,7 @@ export function Account() {
             <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
                 <button onClick={openLikes} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.likedMovies.length}</span><span className="text-xs text-subtext uppercase mt-1">Нравится</span></button>
                 <button onClick={openDislikes} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.dislikedMovies?.length ?? 0}</span><span className="text-xs text-subtext uppercase mt-1">Дизлайки</span></button>
+                <button onClick={openWatchlist} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.watchLaterMovies?.length ?? 0}</span><span className="text-xs text-subtext uppercase mt-1">Позже</span></button>
                 <div className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px]"><span className="text-3xl font-bold">{user.friends.length}</span><span className="text-xs text-subtext uppercase mt-1">Друзья</span></div>
             </div>
 
@@ -254,7 +256,7 @@ export function Account() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setShowLikesModal(false)}>
                     <div className="bg-surface p-6 rounded-3xl w-full max-w-lg border border-white/10 max-h-[80vh] flex flex-col" onClick={(event) => event.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2">{likesTitle.startsWith('Дизлайки') ? <ThumbsDown size={20} className="text-subtext" /> : <Heart size={20} className="text-primary" />}{likesTitle}</h2>
+                            <h2 className="text-xl font-bold flex items-center gap-2">{likesTitle.startsWith('Дизлайки') ? <ThumbsDown size={20} className="text-subtext" /> : likesTitle.startsWith('Посмотреть') ? <Bookmark size={20} className="text-subtext" /> : <Heart size={20} className="text-primary" />}{likesTitle}</h2>
                             <button onClick={() => setShowLikesModal(false)} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                         </div>
                         <div className="overflow-y-auto">

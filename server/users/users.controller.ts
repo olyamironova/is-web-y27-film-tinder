@@ -78,6 +78,12 @@ export class UsersController {
     return this.users.dislikes(user.id);
   }
 
+  @Get('me/watchlist')
+  @ApiOkResponse({ description: 'Movies the current user saved to watch later' })
+  watchlist(@CurrentUser() user: AuthenticatedUser) {
+    return this.users.watchlist(user.id);
+  }
+
   @Get(':id/likes')
   @ApiOkResponse({ description: 'Movies a friend liked' })
   friendLikes(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {

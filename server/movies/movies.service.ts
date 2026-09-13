@@ -167,6 +167,10 @@ export class MoviesService {
     return this.swipedByUser(userId, SwipeDirection.DISLIKE);
   }
 
+  async watchLaterByUser(userId: string): Promise<MovieView[]> {
+    return this.swipedByUser(userId, SwipeDirection.WATCH_LATER);
+  }
+
   private async swipedByUser(userId: string, direction: SwipeDirection): Promise<MovieView[]> {
     const swipes = await this.swipes.find({
       where: { userId, direction },

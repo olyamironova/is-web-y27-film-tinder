@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Bookmark } from 'lucide-react';
 import { MovieCard } from '../components/MovieCard';
 import { api, ApiError } from '../api/client';
 import type { Movie } from '../types';
@@ -38,6 +39,21 @@ export function Home() {
             setIndex(prev => prev + 1);
             setDirection(0);
         }, 50);
+    };
+
+    const saveForLater = async () => {
+        const movie = movies[index];
+        try {
+            await api.swipe(movie.id, 'watch_later');
+            setNotice(`«${movie.title}» — в списке «Посмотреть позже»`);
+        } catch (caught) {
+            if (caught instanceof ApiError && caught.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+            setError('Не удалось сохранить');
+        }
+        setTimeout(() => setIndex(prev => prev + 1), 50);
     };
 
     const currentMovie = movies[index];
@@ -79,11 +95,14 @@ export function Home() {
                 })}
             </AnimatePresence>
 
-            <div className="absolute bottom-6 flex gap-6 z-10">
-                <button onClick={() => swipe('left')} className="w-14 h-14 rounded-full bg-surface border border-white/10 shadow-xl flex items-center justify-center text-primary text-xl hover:scale-110 transition-transform">
+            <div className="absolute bottom-6 flex items-center gap-5 z-10">
+                <button onClick={() => swipe('left')} title="Не нравится" className="w-14 h-14 rounded-full bg-surface border border-white/10 shadow-xl flex items-center justify-center text-primary text-xl hover:scale-110 transition-transform">
                     ✕
                 </button>
-                <button onClick={() => swipe('right')} className="w-14 h-14 rounded-full bg-primary shadow-[0_0_20px_rgba(229,9,20,0.4)] flex items-center justify-center text-white text-xl hover:scale-110 transition-transform">
+                <button onClick={saveForLater} title="Посмотреть позже" className="w-12 h-12 rounded-full bg-surface border border-white/10 shadow-xl flex items-center justify-center text-subtext hover:text-white hover:scale-110 transition-transform">
+                    <Bookmark size={20} />
+                </button>
+                <button onClick={() => swipe('right')} title="Нравится" className="w-14 h-14 rounded-full bg-primary shadow-[0_0_20px_rgba(229,9,20,0.4)] flex items-center justify-center text-white text-xl hover:scale-110 transition-transform">
                     ♥
                 </button>
             </div>

@@ -30,7 +30,7 @@ export const api = {
   movie: (id: string) => request<Movie>(`/api/movies/${id}`),
   recommendations: () => request<Movie[]>('/api/movies/recommendations'),
   randomMovie: () => request<Movie>('/api/movies/random'),
-  swipe: (movieId: string, direction: 'like' | 'dislike') => request(`/api/movies/${movieId}/swipes`, {
+  swipe: (movieId: string, direction: 'like' | 'dislike' | 'watch_later') => request(`/api/movies/${movieId}/swipes`, {
     method: 'POST',
     body: JSON.stringify({ direction }),
   }),
@@ -38,6 +38,7 @@ export const api = {
   profile: () => request<User>('/api/users/me'),
   myLikes: () => request<Movie[]>('/api/users/me/likes'),
   myDislikes: () => request<Movie[]>('/api/users/me/dislikes'),
+  myWatchlist: () => request<Movie[]>('/api/users/me/watchlist'),
   friendLikes: (userId: string) => request<Movie[]>(`/api/users/${userId}/likes`),
   removeSwipe: (movieId: string) => request<void>(`/api/movies/${movieId}/swipes`, { method: 'DELETE' }),
   login: (email: string, password: string) => request<{ user: SessionUser }>('/api/auth/login', {

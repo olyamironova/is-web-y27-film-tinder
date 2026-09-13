@@ -30,6 +30,7 @@ export interface User {
     role?: 'user' | 'admin';
     likedMovies: string[];
     dislikedMovies?: string[];
+    watchLaterMovies?: string[];
     friends: User[];
     friendshipId?: string;
     incomingRequests?: FriendRequest[];

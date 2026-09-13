@@ -6,6 +6,7 @@ import { User } from './user.entity.js';
 export enum SwipeDirection {
   LIKE = 'like',
   DISLIKE = 'dislike',
+  WATCH_LATER = 'watch_later',
 }
 
 registerEnumType(SwipeDirection, { name: 'SwipeDirection' });

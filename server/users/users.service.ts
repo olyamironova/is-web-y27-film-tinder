@@ -20,9 +20,10 @@ export class UsersService {
 
   async profile(id: string) {
     const user = await this.findOne(id);
-    const [likes, dislikes, friendships] = await Promise.all([
+    const [likes, dislikes, watchLater, friendships] = await Promise.all([
       this.movies.likedByUser(id),
       this.movies.dislikedByUser(id),
+      this.movies.watchLaterByUser(id),
       this.friendships.find({
         where: [{ requesterId: id }, { addresseeId: id }],
         relations: { requester: true, addressee: true },
@@ -40,6 +41,7 @@ export class UsersService {
       role: user.role,
       likedMovies: likes.map((movie) => movie.id),
       dislikedMovies: dislikes.map((movie) => movie.id),
+      watchLaterMovies: watchLater.map((movie) => movie.id),
       friends: accepted.map((friendship) => {
         const friend = friendship.requesterId === id ? friendship.addressee : friendship.requester;
         return {
@@ -74,6 +76,11 @@ export class UsersService {
   async dislikes(id: string) {
     await this.findOne(id);
     return this.movies.dislikedByUser(id);
+  }
+
+  async watchlist(id: string) {
+    await this.findOne(id);
+    return this.movies.watchLaterByUser(id);
   }
 
   // Удаление дружбы/заявки: отклонить входящую, отменить исходящую или удалить друга
