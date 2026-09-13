@@ -6,22 +6,26 @@ import {
   HttpCode,
   HttpStatus,
   MaxFileSizeValidator,
+  MessageEvent,
   Param,
   ParseFilePipe,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  Sse,
   UploadedFile,
   UseInterceptors,
   FileTypeValidator,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { PaginationQueryDto } from '../common/dto.js';
 import { AuthenticatedUser } from '../common/types/authenticated-request.js';
+import { FriendEventsService } from './friend-events.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { CreateFriendshipDto } from './dto/create-friendship.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
@@ -32,12 +36,18 @@ import { UsersService } from './users.service.js';
 @ApiBearerAuth()
 @Controller('api/users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(private readonly users: UsersService, private readonly friendEvents: FriendEventsService) {}
 
   @Get('me')
   @ApiOkResponse({ description: 'Current user profile with likes and friends' })
   profile(@CurrentUser() user: AuthenticatedUser) {
     return this.users.profile(user.id);
+  }
+
+  @Sse('me/notifications')
+  @ApiOperation({ summary: 'Live notifications (new friend requests, accepted requests)' })
+  notifications(@CurrentUser() user: AuthenticatedUser): Observable<MessageEvent> {
+    return this.friendEvents.streamFor(user.id);
   }
 
   @Patch('me')

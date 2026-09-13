@@ -4,6 +4,7 @@ import { compare, hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
 import { MoviesService } from '../movies/movies.service.js';
 import { ObjectStorageService } from '../storage/object-storage.service.js';
+import { FriendEventsService } from './friend-events.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { Friendship, FriendshipStatus } from './entities/friendship.entity.js';
@@ -16,6 +17,7 @@ export class UsersService {
     @InjectRepository(Friendship) private readonly friendships: Repository<Friendship>,
     private readonly movies: MoviesService,
     private readonly storage: ObjectStorageService,
+    private readonly friendEvents: FriendEventsService,
   ) {}
 
   async profile(id: string) {
@@ -158,7 +160,10 @@ export class UsersService {
       ],
     });
     if (existing) throw new ConflictException('Заявка или дружба уже существует');
-    return this.friendships.save(this.friendships.create({ requesterId: userId, addresseeId: addressee.id }));
+    const friendship = await this.friendships.save(this.friendships.create({ requesterId: userId, addresseeId: addressee.id }));
+    const requester = await this.users.findOne({ where: { id: userId }, select: { name: true } });
+    this.friendEvents.emit(addressee.id, 'friend-request', requester?.name ?? 'Пользователь', userId, friendship.id);
+    return friendship;
   }
 
   async acceptFriend(userId: string, friendshipId: string) {
@@ -166,7 +171,10 @@ export class UsersService {
     if (!friendship) throw new NotFoundException('Заявка не найдена');
     if (friendship.addresseeId !== userId) throw new UnauthorizedException('Эта заявка адресована другому пользователю');
     friendship.status = FriendshipStatus.ACCEPTED;
-    return this.friendships.save(friendship);
+    const saved = await this.friendships.save(friendship);
+    const accepter = await this.users.findOne({ where: { id: userId }, select: { name: true } });
+    this.friendEvents.emit(friendship.requesterId, 'friend-accepted', accepter?.name ?? 'Пользователь', userId, saved.id);
+    return saved;
   }
 
   private async findOne(id: string): Promise<User> {
