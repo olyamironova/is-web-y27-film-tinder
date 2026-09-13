@@ -12,6 +12,8 @@ import { GlobalExceptionFilter } from './common/filters/http-exception.filter.js
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // За обратным прокси (Render и т.п.) доверяем X-Forwarded-*, чтобы request.protocol был https
+  app.set('trust proxy', 1);
   app.use(cookieParser());
   app.use(json({ limit: '1mb' }));
   app.use(urlencoded({ extended: true }));

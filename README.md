@@ -2,6 +2,12 @@
 
 Полноценное приложение для выбора фильмов: React 19 frontend и NestJS backend в одном репозитории. Автор: Olga Mironova.
 
+**Развёрнутое приложение:** <https://film-tinder.onrender.com>
+
+- приложение: <https://film-tinder.onrender.com>
+- Swagger/OpenAPI: <https://film-tinder.onrender.com/api/docs>
+- GraphQL Sandbox: <https://film-tinder.onrender.com/graphql>
+
 ## Быстрый запуск
 
 Требования: Node.js 22, pnpm и Docker.
