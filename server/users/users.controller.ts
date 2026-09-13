@@ -66,8 +66,9 @@ export class UsersController {
   }
 
   @Get('me/likes')
+  @ApiOkResponse({ description: 'Movies the current user liked' })
   likedMovies(@CurrentUser() user: AuthenticatedUser) {
-    return this.users.profile(user.id).then((profile) => profile.likedMovies);
+    return this.users.likes(user.id);
   }
 
   @Post('me/friends')

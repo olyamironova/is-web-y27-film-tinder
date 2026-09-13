@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, Check, Clock, LogOut, Settings, UserPlus, Users } from 'lucide-react';
+import { Camera, Check, Clock, Heart, LogOut, Settings, UserPlus, Users, X } from 'lucide-react';
 import { api, ApiError } from '../api/client';
-import type { User } from '../types';
+import type { Movie, User } from '../types';
 
 export function Account() {
     const [user, setUser] = useState<User | null>(null);
@@ -18,6 +18,8 @@ export function Account() {
     const [newPassword, setNewPassword] = useState('');
     const [message, setMessage] = useState('');
     const [unauthorized, setUnauthorized] = useState(false);
+    const [showLikesModal, setShowLikesModal] = useState(false);
+    const [likedMovies, setLikedMovies] = useState<Movie[] | null>(null);
 
     useEffect(() => {
         api.profile().then((profile) => {
@@ -86,6 +88,17 @@ export function Account() {
         }
     };
 
+    const openLikes = async () => {
+        setShowLikesModal(true);
+        setLikedMovies(null);
+        try {
+            setLikedMovies(await api.myLikes());
+        } catch (caught) {
+            setMessage(caught instanceof ApiError ? caught.message : 'Не удалось загрузить лайки');
+            setShowLikesModal(false);
+        }
+    };
+
     const acceptFriend = async (friendshipId: string) => {
         setMessage('');
         try {
@@ -129,7 +142,7 @@ export function Account() {
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-                <div className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px]"><span className="text-3xl font-bold">{user.likedMovies.length}</span><span className="text-xs text-subtext uppercase mt-1">Нравится</span></div>
+                <button onClick={openLikes} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.likedMovies.length}</span><span className="text-xs text-subtext uppercase mt-1">Нравится</span></button>
                 <div className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px]"><span className="text-3xl font-bold">{user.friends.length}</span><span className="text-xs text-subtext uppercase mt-1">Друзья</span></div>
             </div>
 
@@ -149,7 +162,7 @@ export function Account() {
                     </section>
                 )}
 
-                {!isEditing && <section><div className="flex items-center justify-between gap-4 mb-4"><h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} className="text-primary" />Друзья</h3><button onClick={() => { setMessage(''); setShowFriendModal(true); }} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><UserPlus size={18} />Добавить</button></div><div className="grid md:grid-cols-2 gap-3">{user.friends.map((friend) => <div key={friend.id} className="flex items-center gap-4 bg-surface p-3 rounded-xl"><div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center"><Users size={20} /></div><div className="font-semibold">{friend.name}</div></div>)}{user.friends.length === 0 && <div className="text-subtext py-4">Нет друзей.</div>}</div></section>}
+                {!isEditing && <section><div className="flex items-center justify-between gap-4 mb-4"><h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} className="text-primary" />Друзья</h3><button onClick={() => { setMessage(''); setShowFriendModal(true); }} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><UserPlus size={18} />Добавить</button></div><div className="grid md:grid-cols-2 gap-3">{user.friends.map((friend) => <div key={friend.id} className="flex items-center gap-4 bg-surface p-3 rounded-xl"><div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center">{friend.avatarUrl ? <img src={friend.avatarUrl} alt={friend.name} className="w-full h-full object-cover" /> : <Users size={20} />}</div><div className="font-semibold">{friend.name}</div></div>)}{user.friends.length === 0 && <div className="text-subtext py-4">Нет друзей.</div>}</div></section>}
 
                 {!isEditing && user.outgoingRequests && user.outgoingRequests.length > 0 && (
                     <section>
@@ -196,6 +209,34 @@ export function Account() {
                         <input autoFocus required value={friendEmail} onChange={(event) => setFriendEmail(event.target.value)} type="email" placeholder="friend@example.com" className="w-full bg-background border border-white/10 p-3 rounded-xl" />
                         <div className="flex gap-4"><button type="button" onClick={() => { setShowFriendModal(false); setFriendEmail(''); }} className="flex-1 py-3 bg-white/10 rounded-xl">Отмена</button><button type="submit" disabled={isSendingFriendRequest} className="flex-1 py-3 bg-primary rounded-xl font-bold disabled:opacity-50">{isSendingFriendRequest ? 'Отправка…' : 'Отправить'}</button></div>
                     </form>
+                </div>
+            )}
+
+            {showLikesModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setShowLikesModal(false)}>
+                    <div className="bg-surface p-6 rounded-3xl w-full max-w-lg border border-white/10 max-h-[80vh] flex flex-col" onClick={(event) => event.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold flex items-center gap-2"><Heart size={20} className="text-primary" />Нравится</h2>
+                            <button onClick={() => setShowLikesModal(false)} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                        </div>
+                        <div className="overflow-y-auto">
+                            {likedMovies === null ? (
+                                <div className="text-subtext py-8 text-center">Загружаем…</div>
+                            ) : likedMovies.length === 0 ? (
+                                <div className="text-subtext py-8 text-center">Пока нет понравившихся фильмов. Свайпайте вправо в ленте.</div>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {likedMovies.map((movie) => (
+                                        <Link key={movie.id} to={`/movie/${movie.id}`} onClick={() => setShowLikesModal(false)} className="group">
+                                            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 mb-2">{movie.posterUrl ? <img src={movie.posterUrl} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" /> : null}</div>
+                                            <div className="text-sm font-semibold truncate">{movie.title}</div>
+                                            <div className="text-xs text-subtext">{movie.year}</div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

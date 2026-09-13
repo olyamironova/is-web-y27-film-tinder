@@ -63,6 +63,11 @@ export class UsersService {
     return { id: friend.id, name: friend.name, avatarUrl: friend.avatarUrl ?? '' };
   }
 
+  async likes(id: string) {
+    await this.findOne(id);
+    return this.movies.likedByUser(id);
+  }
+
   async findAll(page: number, limit: number) {
     const [data, total] = await this.users.findAndCount({
       order: { createdAt: 'DESC' },

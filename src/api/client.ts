@@ -36,6 +36,7 @@ export const api = {
   }),
   session: () => request<{ user: SessionUser | null }>('/api/auth/session'),
   profile: () => request<User>('/api/users/me'),
+  myLikes: () => request<Movie[]>('/api/users/me/likes'),
   login: (email: string, password: string) => request<{ user: SessionUser }>('/api/auth/login', {
     method: 'POST', body: JSON.stringify({ email, password }),
   }),
