@@ -34,12 +34,15 @@ export class AuthController {
     return result;
   }
 
+  @Public()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiCookieAuth('session')
   logout(@Req() request: Request, @Res({ passthrough: true }) response: Response): void {
+    // Публичный и идемпотентный: повторный выход без cookie не должен давать 401
     response.clearCookie('film_tinder_token', { path: '/' });
-    if (request.accepts('html')) response.redirect('/');
+    // Для формы в браузере всегда перезагружаем страницу входа
+    if (request.accepts('html')) response.redirect('/login');
   }
 
   @Get('me')
