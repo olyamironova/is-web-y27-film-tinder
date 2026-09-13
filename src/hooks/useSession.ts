@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react';
-import { api } from '../api/client';
+import { createContext, useContext } from 'react';
 import type { SessionUser } from '../types';
 
-export function useSession() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
+export interface SessionContextValue {
+    user: SessionUser | null;
+    loading: boolean;
+    refresh: () => Promise<void>;
+    updateAvatar: (avatarUrl: string) => void;
+}
 
-  useEffect(() => {
-    api.session().then(({ user: sessionUser }) => setUser(sessionUser)).finally(() => setLoading(false));
-  }, []);
+export const SessionContext = createContext<SessionContextValue | null>(null);
 
-  return { user, loading };
+export function useSession(): SessionContextValue {
+    const context = useContext(SessionContext);
+    if (!context) throw new Error('useSession must be used within a SessionProvider');
+    return context;
 }

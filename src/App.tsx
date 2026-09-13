@@ -5,9 +5,11 @@ import { MovieDetail } from './pages/MovieDetail';
 import { Account } from './pages/Account';
 import { Recommendations } from './pages/Recommendations';
 import { Auth } from './pages/Auth';
+import { SessionProvider } from './components/SessionProvider';
 
 function App() {
   return (
+    <SessionProvider>
     <BrowserRouter>
       <Layout>
         <Routes>
@@ -20,6 +22,7 @@ function App() {
         </Routes>
       </Layout>
     </BrowserRouter>
+    </SessionProvider>
   );
 }
 

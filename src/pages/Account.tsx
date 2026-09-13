@@ -3,9 +3,11 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Bookmark, Camera, Check, Clock, Heart, LogOut, Settings, ThumbsDown, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import { api, ApiError } from '../api/client';
+import { useSession } from '../hooks/useSession';
 import type { Movie, User } from '../types';
 
 export function Account() {
+    const { updateAvatar } = useSession();
     const [user, setUser] = useState<User | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -63,6 +65,7 @@ export function Account() {
         try {
             const { avatarUrl } = await api.uploadAvatar(file);
             setUser({ ...user, avatarUrl });
+            updateAvatar(avatarUrl); // мгновенно обновляем аватар в навбаре
         } catch (caught) {
             setMessage(caught instanceof ApiError ? caught.message : 'Не удалось загрузить аватар');
         }
