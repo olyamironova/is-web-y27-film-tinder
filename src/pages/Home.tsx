@@ -13,8 +13,28 @@ export function Home() {
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
 
+    // Персональная колода: уже засвайпанные фильмы скрыты. Гость (401) видит весь каталог.
+    const loadDeck = () =>
+        api.deck()
+            .then((data) => setMovies(data))
+            .catch((caught) => {
+                if (caught instanceof ApiError && caught.status === 401) {
+                    return api.movies().then(({ data }) => setMovies(data));
+                }
+                throw caught;
+            })
+            .catch(() => setError('Не удалось загрузить фильмы'))
+            .finally(() => setLoading(false));
+
+    const reloadDeck = () => {
+        setError('');
+        setLoading(true);
+        setIndex(0);
+        void loadDeck();
+    };
+
     useEffect(() => {
-        api.movies().then(({ data }) => setMovies(data)).catch(() => setError('Не удалось загрузить фильмы')).finally(() => setLoading(false));
+        void loadDeck();
         const source = new EventSource('/api/movies/events');
         source.onmessage = ({ data }) => {
             const event = JSON.parse(data);
@@ -64,10 +84,10 @@ export function Home() {
     if (!currentMovie) {
         return (
             <div className="flex flex-col items-center justify-center h-[70vh] text-center px-6">
-                <h2 className="text-2xl font-bold mb-2">Фильмы закончились!</h2>
-                <p className="text-subtext mb-6">Загляните позже за новыми фильмами.</p>
-                <button onClick={() => setIndex(0)} className="px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-lg hover:bg-red-700 transition-colors">
-                    Начать заново
+                <h2 className="text-2xl font-bold mb-2">Вы всё пересмотрели!</h2>
+                <p className="text-subtext mb-6">Новые оценки можно изменить в профиле, а здесь — обновить ленту.</p>
+                <button onClick={reloadDeck} className="px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-lg hover:bg-red-700 transition-colors">
+                    Обновить ленту
                 </button>
             </div>
         );

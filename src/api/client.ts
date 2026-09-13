@@ -29,6 +29,7 @@ export const api = {
   movies: (page = 1, limit = 100) => request<MoviePage>(`/api/movies?page=${page}&limit=${limit}`),
   movie: (id: string) => request<Movie>(`/api/movies/${id}`),
   recommendations: () => request<Movie[]>('/api/movies/recommendations'),
+  deck: () => request<Movie[]>('/api/movies/deck'),
   randomMovie: () => request<Movie>('/api/movies/random'),
   swipe: (movieId: string, direction: 'like' | 'dislike' | 'watch_later') => request(`/api/movies/${movieId}/swipes`, {
     method: 'POST',

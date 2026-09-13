@@ -84,6 +84,13 @@ export class MoviesApiController {
     return this.movies.recommendations(undefined, safeLimit);
   }
 
+  @Get('deck')
+  @ApiBearerAuth()
+  @ApiOkResponse({ description: 'Swipe deck for the current user with already-swiped movies hidden' })
+  deck(@CurrentUser() user: AuthenticatedUser) {
+    return this.movies.recommendations(user.id, 100);
+  }
+
   @Public()
   @Get(':id')
   @Header('Cache-Control', 'public, max-age=60')
