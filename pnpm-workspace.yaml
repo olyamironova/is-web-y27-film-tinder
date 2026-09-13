@@ -1,0 +1,6 @@
+allowBuilds:
+  '@apollo/protobufjs': false
+  '@parcel/watcher': false
+  '@scarf/scarf': false
+  esbuild: true
+  unrs-resolver: false

@@ -1,18 +1,26 @@
-import { useState } from 'react';
-import { MOVIES } from '../mocks/data';
+import { useEffect, useState } from 'react';
 import type { Movie } from '../types';
 import { Shuffle, Flame, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { api } from '../api/client';
 
 export function Recommendations() {
     const [tab, setTab] = useState<'feed' | 'shuffle'>('feed');
     const [random, setRandom] = useState<Movie | null>(null);
+    const [movies, setMovies] = useState<Movie[]>([]);
+    const [error, setError] = useState('');
 
-    const pickRandom = () => {
-        if (MOVIES.length === 0) return;
-        const idx = Math.floor(Math.random() * MOVIES.length);
-        setRandom(MOVIES[idx]);
-        setTab('shuffle');
+    useEffect(() => {
+        api.recommendations().then(setMovies).catch(() => setError('Не удалось загрузить рекомендации'));
+    }, []);
+
+    const pickRandom = async () => {
+        try {
+            setRandom(await api.randomMovie());
+            setTab('shuffle');
+        } catch {
+            setError('Не удалось выбрать случайный фильм');
+        }
     };
 
     const shuffle = () => {
@@ -45,7 +53,8 @@ export function Recommendations() {
             {tab === 'feed' && (
                 <div className="flex-1 overflow-y-auto">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {MOVIES.map(movie => (
+                        {error && <p className="col-span-full text-red-400">{error}</p>}
+                        {movies.map(movie => (
                             <Link key={movie.id} to={`/movie/${movie.id}`} className="block group">
                                 <div className="relative h-36 md:h-48 rounded-xl overflow-hidden mb-2 md:mb-3">
                                     <img src={movie.backdropUrl} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

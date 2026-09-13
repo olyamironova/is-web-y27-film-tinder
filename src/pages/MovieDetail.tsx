@@ -1,13 +1,22 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Star, Calendar, Users, Clapperboard } from 'lucide-react';
-import { MOVIES } from '../mocks/data';
 import { Badge } from '../components/Badge';
+import { api } from '../api/client';
+import type { Movie } from '../types';
 
 export function MovieDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const movie = MOVIES.find(m => m.id === id);
+    const [movie, setMovie] = useState<Movie | null>(null);
+    const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        if (!id) return;
+        api.movie(id).then(setMovie).finally(() => setLoading(false));
+    }, [id]);
+
+    if (loading) return <div className="p-10 text-center text-subtext">Загружаем фильм…</div>;
     if (!movie) return <div className="p-10 text-center">Фильм не найден</div>;
 
     return (

@@ -1,0 +1,22 @@
+### Health
+GET http://localhost:3000/api/health
+
+### Login as demo user
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@film-tinder.local",
+  "password": "User12345!"
+}
+
+### Paginated catalog
+GET http://localhost:3000/api/movies?page=1&limit=5
+
+### GraphQL catalog
+POST http://localhost:3000/graphql
+Content-Type: application/json
+
+{
+  "query": "query { movies(page: 1, limit: 5) { data { id title rating genres { name } credits { name role } } meta { total totalPages } } }"
+}

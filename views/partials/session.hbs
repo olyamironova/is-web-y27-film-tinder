@@ -1,0 +1,13 @@
+{{#if user}}
+  <div class="session">
+    <span class="muted">Вы вошли как {{user.name}}</span>
+    <form class="logout" method="post" action="/api/auth/logout">
+      <button class="button secondary" type="submit">Выйти</button>
+    </form>
+  </div>
+{{else}}
+  <div class="session">
+    <span class="muted">Вы не авторизованы</span>
+    <a class="button" href="/login">Войти</a>
+  </div>
+{{/if}}

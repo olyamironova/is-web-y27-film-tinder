@@ -25,7 +25,7 @@ export function MovieCard({ movie, onSwipe, isFront = false, custom }: MovieCard
         }
     }, [isFront, x]);
 
-    const onDragEnd = (_: any, info: PanInfo) => {
+    const onDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         if (Math.abs(info.offset.x) > 100 && onSwipe) {
             onSwipe(info.offset.x > 0 ? 'right' : 'left');
         }

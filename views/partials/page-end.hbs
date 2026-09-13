@@ -1,0 +1,19 @@
+  </main>
+  {{> footer}}
+  <script>
+    const clientStartedAt = performance.now();
+    addEventListener('load', () => {
+      const value = document.querySelector('[data-client-time]');
+      if (value) value.textContent = `${(performance.now() - clientStartedAt).toFixed(2)} ms`;
+    });
+    const events = new EventSource('/api/movies/events');
+    events.onmessage = ({ data }) => {
+      const event = JSON.parse(data);
+      if (event.type === 'heartbeat') return;
+      const notice = document.getElementById('live-notice');
+      notice.textContent = `Каталог изменён: ${event.type} — ${event.title || event.movieId}`;
+      notice.style.display = 'block';
+    };
+  </script>
+</body>
+</html>

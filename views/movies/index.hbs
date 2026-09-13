@@ -1,0 +1,10 @@
+{{> page_start}}
+<div class="row"><h1>{{title}}</h1><a class="button" href="/admin/movies/add">Добавить фильм</a></div>
+<div class="grid">
+  {{#each movies}}
+    {{> movie_card}}
+  {{else}}
+    <p>Каталог пуст.</p>
+  {{/each}}
+</div>
+{{> page_end}}

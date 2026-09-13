@@ -1,0 +1,44 @@
+erDiagram
+  USER ||--o{ SWIPE : makes
+  MOVIE ||--o{ SWIPE : receives
+  USER ||--o{ FRIENDSHIP : requests
+  USER ||--o{ FRIENDSHIP : receives
+  MOVIE ||--o{ CREDIT : has
+  MOVIE }o--o{ GENRE : classified_as
+
+  USER {
+    uuid id PK
+    string email UK
+    string password_hash
+    string name
+    enum role
+  }
+  MOVIE {
+    uuid id PK
+    string title
+    text description
+    float rating
+    int year
+  }
+  GENRE {
+    uuid id PK
+    string name UK
+  }
+  CREDIT {
+    uuid id PK
+    uuid movie_id FK
+    string name
+    enum role
+  }
+  SWIPE {
+    uuid id PK
+    uuid user_id FK
+    uuid movie_id FK
+    enum direction
+  }
+  FRIENDSHIP {
+    uuid id PK
+    uuid requester_id FK
+    uuid addressee_id FK
+    enum status
+  }

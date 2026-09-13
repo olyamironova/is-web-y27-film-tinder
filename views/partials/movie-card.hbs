@@ -1,0 +1,8 @@
+<article class="card">
+  <h2>{{title}}</h2>
+  <p class="muted">{{year}} · {{rating}} · {{director}}</p>
+  <div class="row">
+    <a class="button secondary" href="/admin/movies/{{id}}/edit">Редактировать</a>
+    <form method="post" action="/admin/movies/{{id}}/delete" onsubmit="return confirm('Удалить фильм?')"><button type="submit">Удалить</button></form>
+  </div>
+</article>

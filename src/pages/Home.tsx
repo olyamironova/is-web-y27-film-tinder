@@ -1,17 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MovieCard } from '../components/MovieCard';
-import { MOVIES, CURRENT_USER } from '../mocks/data';
+import { api, ApiError } from '../api/client';
+import type { Movie } from '../types';
 
 export function Home() {
     const [index, setIndex] = useState(0);
-    const [movies] = useState(MOVIES);
+    const [movies, setMovies] = useState<Movie[]>([]);
     const [direction, setDirection] = useState<number>(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
 
-    const swipe = (dir: 'left' | 'right') => {
+    useEffect(() => {
+        api.movies().then(({ data }) => setMovies(data)).catch(() => setError('Не удалось загрузить фильмы')).finally(() => setLoading(false));
+        const source = new EventSource('/api/movies/events');
+        source.onmessage = ({ data }) => {
+            const event = JSON.parse(data);
+            if (event.type !== 'heartbeat') setNotice(`Каталог обновлён: ${event.title ?? event.movieId}`);
+        };
+        return () => source.close();
+    }, []);
+
+    const swipe = async (dir: 'left' | 'right') => {
         const movie = movies[index];
-        if (dir === 'right') {
-            CURRENT_USER.likedMovies.push(movie.id);
+        try {
+            await api.swipe(movie.id, dir === 'right' ? 'like' : 'dislike');
+        } catch (caught) {
+            if (caught instanceof ApiError && caught.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+            setError('Не удалось сохранить выбор');
         }
         setDirection(dir === 'right' ? 1 : -1);
         setTimeout(() => {
@@ -21,6 +41,9 @@ export function Home() {
     };
 
     const currentMovie = movies[index];
+
+    if (loading) return <div className="flex h-[70vh] items-center justify-center text-subtext">Загружаем каталог…</div>;
+    if (error && movies.length === 0) return <div className="p-10 text-center text-red-400">{error}</div>;
 
     if (!currentMovie) {
         return (
@@ -36,6 +59,7 @@ export function Home() {
 
     return (
         <div className="relative w-full h-[calc(100vh-64px)] flex items-center justify-center p-4 perspective-1000 overflow-hidden">
+            {(notice || error) && <div className="absolute top-4 z-40 bg-surface border border-white/10 rounded-xl px-4 py-2 text-sm">{error || notice}</div>}
             <AnimatePresence mode="wait" custom={direction}>
                 {movies.slice(index, index + 2).reverse().map((movie) => {
                     const isFront = movie.id === currentMovie?.id;
