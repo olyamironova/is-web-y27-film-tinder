@@ -41,8 +41,13 @@ export class AuthController {
   logout(@Req() request: Request, @Res({ passthrough: true }) response: Response): void {
     // Публичный и идемпотентный: повторный выход без cookie не должен давать 401
     response.clearCookie('film_tinder_token', { path: '/' });
-    // Для формы в браузере всегда перезагружаем страницу входа
-    if (request.accepts('html')) response.redirect('/login');
+    // Редиректим только настоящую навигацию по документу (форма MVC), но не fetch из SPA:
+    // fetch с Accept: */* иначе тоже уходил бы в редирект и ломал клиентский выход
+    const dest = request.headers['sec-fetch-dest'];
+    const isDocumentNavigation = dest
+      ? dest === 'document'
+      : Boolean(request.accepts('html')) && !request.is('application/json');
+    if (isDocumentNavigation) response.redirect('/login');
   }
 
   @Get('me')
