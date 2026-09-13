@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -71,6 +72,12 @@ export class UsersController {
     return this.users.likes(user.id);
   }
 
+  @Get('me/dislikes')
+  @ApiOkResponse({ description: 'Movies the current user disliked' })
+  dislikedMovies(@CurrentUser() user: AuthenticatedUser) {
+    return this.users.dislikes(user.id);
+  }
+
   @Get(':id/likes')
   @ApiOkResponse({ description: 'Movies a friend liked' })
   friendLikes(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
@@ -85,6 +92,13 @@ export class UsersController {
   @Patch('me/friends/:id/accept')
   acceptFriend(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.users.acceptFriend(user.id, id);
+  }
+
+  @Delete('me/friends/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOkResponse({ description: 'Reject incoming, cancel outgoing, or remove a friend' })
+  async removeFriend(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.users.removeFriendship(user.id, id);
   }
 
   @Get()

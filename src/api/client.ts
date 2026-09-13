@@ -37,7 +37,9 @@ export const api = {
   session: () => request<{ user: SessionUser | null }>('/api/auth/session'),
   profile: () => request<User>('/api/users/me'),
   myLikes: () => request<Movie[]>('/api/users/me/likes'),
+  myDislikes: () => request<Movie[]>('/api/users/me/dislikes'),
   friendLikes: (userId: string) => request<Movie[]>(`/api/users/${userId}/likes`),
+  removeSwipe: (movieId: string) => request<void>(`/api/movies/${movieId}/swipes`, { method: 'DELETE' }),
   login: (email: string, password: string) => request<{ user: SessionUser }>('/api/auth/login', {
     method: 'POST', body: JSON.stringify({ email, password }),
   }),
@@ -61,5 +63,8 @@ export const api = {
   }),
   acceptFriend: (friendshipId: string) => request<{ id: string }>(`/api/users/me/friends/${friendshipId}/accept`, {
     method: 'PATCH',
+  }),
+  removeFriend: (friendshipId: string) => request<void>(`/api/users/me/friends/${friendshipId}`, {
+    method: 'DELETE',
   }),
 };

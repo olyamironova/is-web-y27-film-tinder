@@ -29,7 +29,9 @@ export interface User {
     avatarUrl: string;
     role?: 'user' | 'admin';
     likedMovies: string[];
+    dislikedMovies?: string[];
     friends: User[];
+    friendshipId?: string;
     incomingRequests?: FriendRequest[];
     outgoingRequests?: FriendRequest[];
 }

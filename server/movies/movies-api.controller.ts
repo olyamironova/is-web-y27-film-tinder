@@ -128,4 +128,12 @@ export class MoviesApiController {
   ) {
     return this.movies.swipe(user.id, id, input.direction);
   }
+
+  @Delete(':id/swipes')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'Swipe removed, movie returns to the deck' })
+  async removeSwipe(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser): Promise<void> {
+    await this.movies.removeSwipe(user.id, id);
+  }
 }

@@ -20,8 +20,9 @@ export class UsersService {
 
   async profile(id: string) {
     const user = await this.findOne(id);
-    const [likes, friendships] = await Promise.all([
+    const [likes, dislikes, friendships] = await Promise.all([
       this.movies.likedByUser(id),
+      this.movies.dislikedByUser(id),
       this.friendships.find({
         where: [{ requesterId: id }, { addresseeId: id }],
         relations: { requester: true, addressee: true },
@@ -30,9 +31,6 @@ export class UsersService {
 
     const accepted = friendships.filter((friendship) => friendship.status === FriendshipStatus.ACCEPTED);
     const pending = friendships.filter((friendship) => friendship.status === FriendshipStatus.PENDING);
-    const friends = accepted.map((friendship) =>
-      friendship.requesterId === id ? friendship.addressee : friendship.requester,
-    );
 
     return {
       id: user.id,
@@ -41,13 +39,18 @@ export class UsersService {
       avatarUrl: user.avatarUrl ?? '',
       role: user.role,
       likedMovies: likes.map((movie) => movie.id),
-      friends: friends.map((friend) => ({
-        id: friend.id,
-        name: friend.name,
-        avatarUrl: friend.avatarUrl ?? '',
-        likedMovies: [],
-        friends: [],
-      })),
+      dislikedMovies: dislikes.map((movie) => movie.id),
+      friends: accepted.map((friendship) => {
+        const friend = friendship.requesterId === id ? friendship.addressee : friendship.requester;
+        return {
+          id: friend.id,
+          name: friend.name,
+          avatarUrl: friend.avatarUrl ?? '',
+          friendshipId: friendship.id,
+          likedMovies: [],
+          friends: [],
+        };
+      }),
       // Входящие заявки (я — адресат): их можно принять по id заявки
       incomingRequests: pending
         .filter((friendship) => friendship.addresseeId === id)
@@ -66,6 +69,21 @@ export class UsersService {
   async likes(id: string) {
     await this.findOne(id);
     return this.movies.likedByUser(id);
+  }
+
+  async dislikes(id: string) {
+    await this.findOne(id);
+    return this.movies.dislikedByUser(id);
+  }
+
+  // Удаление дружбы/заявки: отклонить входящую, отменить исходящую или удалить друга
+  async removeFriendship(userId: string, friendshipId: string): Promise<void> {
+    const friendship = await this.friendships.findOne({ where: { id: friendshipId } });
+    if (!friendship) throw new NotFoundException('Заявка или дружба не найдена');
+    if (friendship.requesterId !== userId && friendship.addresseeId !== userId) {
+      throw new ForbiddenException('Нет доступа к этой записи');
+    }
+    await this.friendships.delete({ id: friendshipId });
   }
 
   async friendLikes(requesterId: string, targetId: string) {

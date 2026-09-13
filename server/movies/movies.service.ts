@@ -160,12 +160,25 @@ export class MoviesService {
   }
 
   async likedByUser(userId: string): Promise<MovieView[]> {
+    return this.swipedByUser(userId, SwipeDirection.LIKE);
+  }
+
+  async dislikedByUser(userId: string): Promise<MovieView[]> {
+    return this.swipedByUser(userId, SwipeDirection.DISLIKE);
+  }
+
+  private async swipedByUser(userId: string, direction: SwipeDirection): Promise<MovieView[]> {
     const swipes = await this.swipes.find({
-      where: { userId, direction: SwipeDirection.LIKE },
+      where: { userId, direction },
       relations: { movie: { genres: true, credits: true } },
       order: { createdAt: 'DESC' },
     });
     return swipes.map((swipe) => this.toView(swipe.movie));
+  }
+
+  // Отмена свайпа: фильм снова попадёт в ленту рекомендаций
+  async removeSwipe(userId: string, movieId: string): Promise<void> {
+    await this.swipes.delete({ userId, movieId });
   }
 
   private async resolveGenres(names: string[], repository: Repository<Genre>): Promise<Genre[]> {
