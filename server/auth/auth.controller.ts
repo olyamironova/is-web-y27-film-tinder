@@ -62,8 +62,8 @@ export class AuthController {
 
   @Public()
   @Get('session')
-  async session(@Req() request: Request): Promise<{ user: AuthenticatedUser | null }> {
-    return { user: await this.auth.authenticateRequest(request) };
+  async session(@Req() request: Request) {
+    return { user: await this.auth.sessionUser(request) };
   }
 
   private setCookie(response: Response, token: string): void {

@@ -15,7 +15,11 @@ export function Navbar() {
             <div className="w-full flex items-center justify-between">
                 <Link to={user ? "/account" : "/login"} aria-label={user ? 'Профиль' : 'Войти'} className={cn("p-2 rounded-full transition-all", isActive('/account') || isActive('/login') ? "text-primary bg-white/10" : "text-subtext hover:text-text")}>
                     <div className="relative">
-                        <User size={24} />
+                        {user?.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.name} className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                            <User size={24} />
+                        )}
                     </div>
                 </Link>
 

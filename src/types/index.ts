@@ -52,4 +52,5 @@ export interface SessionUser {
     email: string;
     name: string;
     role: 'user' | 'admin';
+    avatarUrl?: string;
 }

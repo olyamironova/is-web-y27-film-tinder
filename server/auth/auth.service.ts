@@ -43,6 +43,14 @@ export class AuthService {
     return this.issueToken(user);
   }
 
+  // Сессия для навбара: помимо данных из токена подтягиваем актуальный avatarUrl из БД
+  async sessionUser(request: Request): Promise<(AuthenticatedUser & { avatarUrl: string }) | null> {
+    const authenticated = await this.authenticateRequest(request);
+    if (!authenticated) return null;
+    const user = await this.users.findOne({ where: { id: authenticated.id }, select: { avatarUrl: true } });
+    return { ...authenticated, avatarUrl: user?.avatarUrl ?? '' };
+  }
+
   async authenticateRequest(request: Request): Promise<AuthenticatedUser | null> {
     const header = request.headers.authorization;
     const bearer = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
