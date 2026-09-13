@@ -1,6 +1,6 @@
 # Film Tinder
 
-Полноценное приложение для выбора фильмов: React 19 frontend и NestJS backend в одном репозитории. Автор: Olga Mironova.
+Полноценное приложение для выбора фильмов: React 19 frontend и NestJS backend в одном репозитории.  
 
 **Развёрнутое приложение:** <https://film-tinder.onrender.com>
 
