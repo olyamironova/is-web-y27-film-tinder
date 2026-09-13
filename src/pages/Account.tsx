@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Bookmark, Camera, Check, Clock, Heart, LogOut, Settings, ThumbsDown, UserMinus, UserPlus, Users, X } from 'lucide-react';
@@ -8,6 +8,7 @@ import type { Movie, User } from '../types';
 
 export function Account() {
     const { updateAvatar } = useSession();
+    const friendsRef = useRef<HTMLElement | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -109,6 +110,7 @@ export function Account() {
     const openLikes = () => showLikes('Нравится', api.myLikes, true);
     const openDislikes = () => showLikes('Дизлайки', api.myDislikes, true);
     const openWatchlist = () => showLikes('Посмотреть позже', api.myWatchlist, true);
+    const scrollToFriends = () => friendsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const openFriendLikes = (friend: User) => showLikes(`Нравится · ${friend.name}`, () => api.friendLikes(friend.id), false);
 
     const undoSwipe = async (movieId: string) => {
@@ -184,7 +186,7 @@ export function Account() {
                 <button onClick={openLikes} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.likedMovies.length}</span><span className="text-xs text-subtext uppercase mt-1">Нравится</span></button>
                 <button onClick={openDislikes} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.dislikedMovies?.length ?? 0}</span><span className="text-xs text-subtext uppercase mt-1">Дизлайки</span></button>
                 <button onClick={openWatchlist} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.watchLaterMovies?.length ?? 0}</span><span className="text-xs text-subtext uppercase mt-1">Позже</span></button>
-                <div className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px]"><span className="text-3xl font-bold">{user.friends.length}</span><span className="text-xs text-subtext uppercase mt-1">Друзья</span></div>
+                <button onClick={scrollToFriends} className="bg-surface p-4 rounded-2xl flex flex-col items-center w-full max-w-[150px] hover:bg-white/10 transition-colors"><span className="text-3xl font-bold">{user.friends.length}</span><span className="text-xs text-subtext uppercase mt-1">Друзья</span></button>
             </div>
 
             <div className="space-y-6 max-w-xl mx-auto">
@@ -204,7 +206,7 @@ export function Account() {
                     </section>
                 )}
 
-                {!isEditing && <section><div className="flex items-center justify-between gap-4 mb-4"><h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} className="text-primary" />Друзья</h3><button onClick={() => { setMessage(''); setShowFriendModal(true); }} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><UserPlus size={18} />Добавить</button></div><div className="grid md:grid-cols-2 gap-3">{user.friends.map((friend) => <div key={friend.id} className="flex items-center gap-2 bg-surface p-3 rounded-xl"><button onClick={() => openFriendLikes(friend)} title={`Показать лайки: ${friend.name}`} className="flex items-center gap-4 flex-1 min-w-0 text-left"><div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center shrink-0">{friend.avatarUrl ? <img src={friend.avatarUrl} alt={friend.name} className="w-full h-full object-cover" /> : <Users size={20} />}</div><div className="font-semibold truncate flex-1">{friend.name}</div><Heart size={16} className="text-subtext shrink-0" /></button><button onClick={() => unfriend(friend)} title="Удалить из друзей" className="p-2 text-subtext hover:text-primary transition-colors shrink-0"><UserMinus size={18} /></button></div>)}{user.friends.length === 0 && <div className="text-subtext py-4">Нет друзей.</div>}</div></section>}
+                {!isEditing && <section ref={friendsRef}><div className="flex items-center justify-between gap-4 mb-4"><h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} className="text-primary" />Друзья</h3><button onClick={() => { setMessage(''); setShowFriendModal(true); }} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><UserPlus size={18} />Добавить</button></div><div className="grid md:grid-cols-2 gap-3">{user.friends.map((friend) => <div key={friend.id} className="flex items-center gap-2 bg-surface p-3 rounded-xl"><button onClick={() => openFriendLikes(friend)} title={`Показать лайки: ${friend.name}`} className="flex items-center gap-4 flex-1 min-w-0 text-left"><div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center shrink-0">{friend.avatarUrl ? <img src={friend.avatarUrl} alt={friend.name} className="w-full h-full object-cover" /> : <Users size={20} />}</div><div className="font-semibold truncate flex-1">{friend.name}</div><Heart size={16} className="text-subtext shrink-0" /></button><button onClick={() => unfriend(friend)} title="Удалить из друзей" className="p-2 text-subtext hover:text-primary transition-colors shrink-0"><UserMinus size={18} /></button></div>)}{user.friends.length === 0 && <div className="text-subtext py-4">Нет друзей.</div>}</div></section>}
 
                 {!isEditing && user.outgoingRequests && user.outgoingRequests.length > 0 && (
                     <section>
