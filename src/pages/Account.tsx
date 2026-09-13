@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, LogOut, Settings, UserPlus, Users } from 'lucide-react';
+import { Camera, Check, Clock, LogOut, Settings, UserPlus, Users } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import type { User } from '../types';
 
@@ -77,11 +77,23 @@ export function Account() {
             await api.requestFriend(friendEmail.trim());
             setFriendEmail('');
             setShowFriendModal(false);
+            setUser(await api.profile());
             setMessage('Заявка в друзья отправлена. Пользователь появится в списке после подтверждения.');
         } catch (caught) {
             setMessage(caught instanceof ApiError ? caught.message : 'Не удалось отправить заявку в друзья');
         } finally {
             setIsSendingFriendRequest(false);
+        }
+    };
+
+    const acceptFriend = async (friendshipId: string) => {
+        setMessage('');
+        try {
+            await api.acceptFriend(friendshipId);
+            setUser(await api.profile());
+            setMessage('Заявка принята');
+        } catch (caught) {
+            setMessage(caught instanceof ApiError ? caught.message : 'Не удалось принять заявку');
         }
     };
 
@@ -122,7 +134,37 @@ export function Account() {
             </div>
 
             <div className="space-y-6 max-w-xl mx-auto">
+                {!isEditing && user.incomingRequests && user.incomingRequests.length > 0 && (
+                    <section>
+                        <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><UserPlus size={20} className="text-primary" />Входящие заявки</h3>
+                        <div className="space-y-3">
+                            {user.incomingRequests.map((requestItem) => (
+                                <div key={requestItem.id} className="flex items-center gap-4 bg-surface p-3 rounded-xl">
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center">{requestItem.user.avatarUrl ? <img src={requestItem.user.avatarUrl} alt={requestItem.user.name} className="w-full h-full object-cover" /> : <Users size={20} />}</div>
+                                    <div className="font-semibold flex-1">{requestItem.user.name}</div>
+                                    <button onClick={() => acceptFriend(requestItem.id)} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><Check size={18} />Принять</button>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {!isEditing && <section><div className="flex items-center justify-between gap-4 mb-4"><h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} className="text-primary" />Друзья</h3><button onClick={() => { setMessage(''); setShowFriendModal(true); }} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><UserPlus size={18} />Добавить</button></div><div className="grid md:grid-cols-2 gap-3">{user.friends.map((friend) => <div key={friend.id} className="flex items-center gap-4 bg-surface p-3 rounded-xl"><div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center"><Users size={20} /></div><div className="font-semibold">{friend.name}</div></div>)}{user.friends.length === 0 && <div className="text-subtext py-4">Нет друзей.</div>}</div></section>}
+
+                {!isEditing && user.outgoingRequests && user.outgoingRequests.length > 0 && (
+                    <section>
+                        <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Clock size={20} className="text-subtext" />Ожидают подтверждения</h3>
+                        <div className="space-y-3">
+                            {user.outgoingRequests.map((requestItem) => (
+                                <div key={requestItem.id} className="flex items-center gap-4 bg-surface p-3 rounded-xl opacity-70">
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center">{requestItem.user.avatarUrl ? <img src={requestItem.user.avatarUrl} alt={requestItem.user.name} className="w-full h-full object-cover" /> : <Users size={20} />}</div>
+                                    <div className="font-semibold flex-1">{requestItem.user.name}</div>
+                                    <span className="text-xs text-subtext uppercase">Заявка отправлена</span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
                 {isEditing ? (
                     <div className="space-y-4">

@@ -23,16 +23,17 @@ export class UsersService {
     const [likes, friendships] = await Promise.all([
       this.movies.likedByUser(id),
       this.friendships.find({
-        where: [
-          { requesterId: id, status: FriendshipStatus.ACCEPTED },
-          { addresseeId: id, status: FriendshipStatus.ACCEPTED },
-        ],
+        where: [{ requesterId: id }, { addresseeId: id }],
         relations: { requester: true, addressee: true },
       }),
     ]);
-    const friends = friendships.map((friendship) =>
+
+    const accepted = friendships.filter((friendship) => friendship.status === FriendshipStatus.ACCEPTED);
+    const pending = friendships.filter((friendship) => friendship.status === FriendshipStatus.PENDING);
+    const friends = accepted.map((friendship) =>
       friendship.requesterId === id ? friendship.addressee : friendship.requester,
     );
+
     return {
       id: user.id,
       email: user.email,
@@ -47,7 +48,19 @@ export class UsersService {
         likedMovies: [],
         friends: [],
       })),
+      // Входящие заявки (я — адресат): их можно принять по id заявки
+      incomingRequests: pending
+        .filter((friendship) => friendship.addresseeId === id)
+        .map((friendship) => ({ id: friendship.id, user: this.friendCard(friendship.requester) })),
+      // Исходящие заявки (я — отправитель): ждут подтверждения
+      outgoingRequests: pending
+        .filter((friendship) => friendship.requesterId === id)
+        .map((friendship) => ({ id: friendship.id, user: this.friendCard(friendship.addressee) })),
     };
+  }
+
+  private friendCard(friend: User) {
+    return { id: friend.id, name: friend.name, avatarUrl: friend.avatarUrl ?? '' };
   }
 
   async findAll(page: number, limit: number) {

@@ -11,6 +11,17 @@ export interface Movie {
     cast: string[];
 }
 
+export interface FriendCard {
+    id: string;
+    name: string;
+    avatarUrl: string;
+}
+
+export interface FriendRequest {
+    id: string;
+    user: FriendCard;
+}
+
 export interface User {
     id: string;
     email?: string;
@@ -19,6 +30,8 @@ export interface User {
     role?: 'user' | 'admin';
     likedMovies: string[];
     friends: User[];
+    incomingRequests?: FriendRequest[];
+    outgoingRequests?: FriendRequest[];
 }
 
 export interface MoviePage {

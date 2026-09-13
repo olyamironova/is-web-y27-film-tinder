@@ -57,4 +57,7 @@ export const api = {
   requestFriend: (email: string) => request<{ id: string }>('/api/users/me/friends', {
     method: 'POST', body: JSON.stringify({ email }),
   }),
+  acceptFriend: (friendshipId: string) => request<{ id: string }>(`/api/users/me/friends/${friendshipId}/accept`, {
+    method: 'PATCH',
+  }),
 };
