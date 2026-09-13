@@ -71,6 +71,12 @@ export class UsersController {
     return this.users.likes(user.id);
   }
 
+  @Get(':id/likes')
+  @ApiOkResponse({ description: 'Movies a friend liked' })
+  friendLikes(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.users.friendLikes(user.id, id);
+  }
+
   @Post('me/friends')
   requestFriend(@CurrentUser() user: AuthenticatedUser, @Body() input: CreateFriendshipDto) {
     return this.users.requestFriend(user.id, input.email);

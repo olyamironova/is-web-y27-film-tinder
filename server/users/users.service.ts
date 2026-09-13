@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
@@ -66,6 +66,20 @@ export class UsersService {
   async likes(id: string) {
     await this.findOne(id);
     return this.movies.likedByUser(id);
+  }
+
+  async friendLikes(requesterId: string, targetId: string) {
+    if (requesterId !== targetId) {
+      const friendship = await this.friendships.findOne({
+        where: [
+          { requesterId, addresseeId: targetId, status: FriendshipStatus.ACCEPTED },
+          { requesterId: targetId, addresseeId: requesterId, status: FriendshipStatus.ACCEPTED },
+        ],
+      });
+      if (!friendship) throw new ForbiddenException('Смотреть лайки можно только у друзей');
+    }
+    await this.findOne(targetId);
+    return this.movies.likedByUser(targetId);
   }
 
   async findAll(page: number, limit: number) {
