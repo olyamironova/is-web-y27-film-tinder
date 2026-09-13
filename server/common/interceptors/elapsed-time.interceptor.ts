@@ -14,10 +14,11 @@ export class ElapsedTimeInterceptor implements NestInterceptor {
         const elapsedMs = Number((performance.now() - startedAt).toFixed(2));
         if (context.getType<string>() === 'graphql') {
           const gqlContext = GqlExecutionContext.create(context).getContext<{ res?: Response }>();
-          gqlContext.res?.setHeader('X-Elapsed-Time', `${elapsedMs}ms`);
+          if (gqlContext.res && !gqlContext.res.headersSent) gqlContext.res.setHeader('X-Elapsed-Time', `${elapsedMs}ms`);
         } else if (context.getType<string>() === 'http') {
           const response = context.switchToHttp().getResponse<Response>();
-          response.setHeader('X-Elapsed-Time', `${elapsedMs}ms`);
+          // Ответ мог быть уже отправлен обработчиком (например, res.redirect в logout) — тогда заголовок не трогаем
+          if (!response.headersSent) response.setHeader('X-Elapsed-Time', `${elapsedMs}ms`);
           const request = context.switchToHttp().getRequest<{ originalUrl?: string }>();
           this.logger.log(`${request.originalUrl ?? 'request'} ${elapsedMs}ms`);
           if (request.originalUrl?.startsWith('/admin') && data && typeof data === 'object') {

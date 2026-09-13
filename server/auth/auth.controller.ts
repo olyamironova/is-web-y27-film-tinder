@@ -36,9 +36,8 @@ export class AuthController {
 
   @Public()
   @Post('logout')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiCookieAuth('session')
-  logout(@Req() request: Request, @Res({ passthrough: true }) response: Response): void {
+  logout(@Req() request: Request, @Res() response: Response): void {
     // Публичный и идемпотентный: повторный выход без cookie не должен давать 401
     response.clearCookie('film_tinder_token', { path: '/' });
     // Редиректим только настоящую навигацию по документу (форма MVC), но не fetch из SPA:
@@ -47,7 +46,11 @@ export class AuthController {
     const isDocumentNavigation = dest
       ? dest === 'document'
       : Boolean(request.accepts('html')) && !request.is('application/json');
-    if (isDocumentNavigation) response.redirect('/login');
+    if (isDocumentNavigation) {
+      response.redirect('/login');
+    } else {
+      response.status(HttpStatus.NO_CONTENT).end();
+    }
   }
 
   @Get('me')
