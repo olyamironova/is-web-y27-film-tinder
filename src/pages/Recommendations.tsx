@@ -18,14 +18,12 @@ export function Recommendations() {
 
     useEffect(() => {
         api.genres().then(setGenres).catch(() => undefined);
-        // Персональные рекомендации (жанры + друзья + рейтинг); для гостя — baseline
         api.deck().catch((caught) => {
             if (caught instanceof ApiError && caught.status === 401) return api.recommendations();
             throw caught;
         }).then(setForYou).catch(() => undefined);
     }, []);
 
-    // Каталог с фильтрами; поиск по названию с debounce
     useEffect(() => {
         const timer = setTimeout(() => {
             api.searchMovies({

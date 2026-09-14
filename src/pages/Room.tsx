@@ -86,7 +86,7 @@ function RoomSession({ code }: { code: string }) {
     };
 
     const copyCode = async () => {
-        try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+        try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { setCopied(false); }
     };
 
     if (error) {

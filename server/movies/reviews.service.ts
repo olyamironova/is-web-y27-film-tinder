@@ -47,9 +47,8 @@ export class ReviewsService {
     };
   }
 
-  // Один отзыв на пользователя+фильм: повторный отзыв обновляет существующий
   async upsert(userId: string, movieId: string, input: CreateReviewDto): Promise<ReviewList> {
-    await this.movies.findOneEntity(movieId); // 404, если фильма нет
+    await this.movies.findOneEntity(movieId);
     const existing = await this.reviews.findOne({ where: { userId, movieId } });
     const review = existing
       ? this.reviews.merge(existing, { rating: input.rating, text: input.text ?? null })

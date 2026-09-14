@@ -66,7 +66,7 @@ export function Account() {
         try {
             const profile = await api.uploadAvatar(file);
             setUser(profile);
-            updateAvatar(profile.avatarUrl); // мгновенно обновляем аватар в навбаре
+            updateAvatar(profile.avatarUrl);
         } catch (caught) {
             setMessage(caught instanceof ApiError ? caught.message : 'Не удалось загрузить аватар');
         }

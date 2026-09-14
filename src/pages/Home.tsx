@@ -13,7 +13,6 @@ export function Home() {
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
 
-    // Персональная колода: уже засвайпанные фильмы скрыты. Гость (401) видит весь каталог.
     const loadDeck = () =>
         api.deck()
             .then((data) => setMovies(data))

@@ -56,11 +56,9 @@ export class UsersService {
           friends: [],
         };
       }),
-      // Входящие заявки (я — адресат): их можно принять по id заявки
       incomingRequests: pending
         .filter((friendship) => friendship.addresseeId === id)
         .map((friendship) => ({ id: friendship.id, user: this.friendCard(friendship.requester) })),
-      // Исходящие заявки (я — отправитель): ждут подтверждения
       outgoingRequests: pending
         .filter((friendship) => friendship.requesterId === id)
         .map((friendship) => ({ id: friendship.id, user: this.friendCard(friendship.addressee) })),
@@ -86,7 +84,6 @@ export class UsersService {
     return this.movies.watchLaterByUser(id);
   }
 
-  // Удаление дружбы/заявки: отклонить входящую, отменить исходящую или удалить друга
   async removeFriendship(userId: string, friendshipId: string): Promise<void> {
     const friendship = await this.friendships.findOne({ where: { id: friendshipId } });
     if (!friendship) throw new NotFoundException('Заявка или дружба не найдена');
@@ -178,7 +175,7 @@ export class UsersService {
     user.avatarUrls = user.avatarUrls.filter((item) => item !== url);
     if (user.avatarUrl === url) user.avatarUrl = user.avatarUrls[user.avatarUrls.length - 1] ?? null;
     await this.users.save(user);
-    await this.storage.deleteAvatar(url); // освобождаем место в S3
+    await this.storage.deleteAvatar(url);
     return this.profile(id);
   }
 

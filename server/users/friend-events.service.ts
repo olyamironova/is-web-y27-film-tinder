@@ -2,7 +2,7 @@ import { Injectable, MessageEvent } from '@nestjs/common';
 import { Observable, Subject, filter, map, merge, timer } from 'rxjs';
 
 export interface FriendEvent {
-  userId: string; // получатель уведомления
+  userId: string;
   type: 'friend-request' | 'friend-accepted';
   fromId: string;
   fromName: string;
@@ -18,7 +18,6 @@ export class FriendEventsService {
     this.events.next({ userId, type, fromName, fromId, friendshipId, occurredAt: new Date().toISOString() });
   }
 
-  // Поток только для указанного пользователя + heartbeat, чтобы соединение не закрывалось
   streamFor(userId: string): Observable<MessageEvent> {
     const userEvents = this.events.pipe(
       filter((event) => event.userId === userId),

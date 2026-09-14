@@ -17,7 +17,6 @@ export class ElapsedTimeInterceptor implements NestInterceptor {
           if (gqlContext.res && !gqlContext.res.headersSent) gqlContext.res.setHeader('X-Elapsed-Time', `${elapsedMs}ms`);
         } else if (context.getType<string>() === 'http') {
           const response = context.switchToHttp().getResponse<Response>();
-          // Ответ мог быть уже отправлен обработчиком (например, res.redirect в logout) — тогда заголовок не трогаем
           if (!response.headersSent) response.setHeader('X-Elapsed-Time', `${elapsedMs}ms`);
           const request = context.switchToHttp().getRequest<{ originalUrl?: string }>();
           this.logger.log(`${request.originalUrl ?? 'request'} ${elapsedMs}ms`);

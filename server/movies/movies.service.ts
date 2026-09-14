@@ -77,7 +77,6 @@ export class MoviesService {
       .take(limit);
 
     if (filters.search) qb.andWhere('movie.title ILIKE :search', { search: `%${filters.search}%` });
-    // Жанр через подзапрос, чтобы не «обрезать» загружаемые жанры фильма
     if (filters.genre) {
       qb.andWhere(
         'movie.id IN (SELECT mg.movie_id FROM movie_genres mg INNER JOIN genres g ON g.id = mg.genre_id WHERE g.name = :genre)',
@@ -168,15 +167,12 @@ export class MoviesService {
     return { movieId, direction };
   }
 
-  // Персональные рекомендации: аффинность по жанрам своих лайков + коллаборативный
-  // сигнал (что лайкнули друзья) + рейтинг. Для гостя (без userId) — топ по рейтингу.
   async recommendations(userId?: string, limit = 20): Promise<MovieView[]> {
     if (!userId) {
       const top = await this.movies.find({ relations: { genres: true, credits: true }, order: { rating: 'DESC' }, take: limit });
       return top.map((movie) => this.toView(movie));
     }
 
-    // Свайпы пользователя: исключаем просмотренное и считаем вес жанров по лайкам
     const userSwipes = await this.swipes.find({ where: { userId }, relations: { movie: { genres: true } } });
     const swipedIds = userSwipes.map((swipe) => swipe.movieId);
     const genreWeight = new Map<string, number>();
@@ -186,7 +182,6 @@ export class MoviesService {
       }
     }
 
-    // Друзья и их лайки (коллаборативный сигнал)
     const friendships = await this.friendships.find({
       where: [
         { requesterId: userId, status: FriendshipStatus.ACCEPTED },
@@ -200,7 +195,6 @@ export class MoviesService {
       for (const swipe of friendLikes) friendLikeCount.set(swipe.movieId, (friendLikeCount.get(swipe.movieId) ?? 0) + 1);
     }
 
-    // Кандидаты — непросмотренные фильмы
     const candidates = await this.movies.find({
       where: swipedIds.length ? { id: Not(In(swipedIds)) } : {},
       relations: { genres: true, credits: true },
@@ -238,7 +232,6 @@ export class MoviesService {
     return this.swipedByUser(userId, SwipeDirection.WATCH_LATER);
   }
 
-  // Мэтчи: фильмы, которые лайкнули оба пользователя (пересечение лайков)
   async matchedMovies(userA: string, userB: string): Promise<MovieView[]> {
     const [likesA, likesB] = await Promise.all([
       this.swipedByUser(userA, SwipeDirection.LIKE),
@@ -257,7 +250,6 @@ export class MoviesService {
     return swipes.map((swipe) => this.toView(swipe.movie));
   }
 
-  // Отмена свайпа: фильм снова попадёт в ленту рекомендаций
   async removeSwipe(userId: string, movieId: string): Promise<void> {
     await this.swipes.delete({ userId, movieId });
   }

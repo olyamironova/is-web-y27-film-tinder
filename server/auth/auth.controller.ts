@@ -38,10 +38,7 @@ export class AuthController {
   @Post('logout')
   @ApiCookieAuth('session')
   logout(@Req() request: Request, @Res() response: Response): void {
-    // Публичный и идемпотентный: повторный выход без cookie не должен давать 401
     response.clearCookie('film_tinder_token', { path: '/' });
-    // Редиректим только настоящую навигацию по документу (форма MVC), но не fetch из SPA:
-    // fetch с Accept: */* иначе тоже уходил бы в редирект и ломал клиентский выход
     const dest = request.headers['sec-fetch-dest'];
     const isDocumentNavigation = dest
       ? dest === 'document'

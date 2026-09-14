@@ -16,13 +16,13 @@ interface Room {
   code: string;
   host: Participant;
   guest: Participant | null;
-  likes: Map<string, Set<string>>; // movieId -> userIds лайкнувших
-  matches: string[]; // movieId, ставшие мэтчем
+  likes: Map<string, Set<string>>;
+  matches: string[];
   events: Subject<RoomEvent>;
   createdAt: number;
 }
 
-const ROOM_TTL_MS = 6 * 60 * 60 * 1000; // комнаты живут 6 часов
+const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
 
 @Injectable()
 export class RoomsService {
@@ -115,7 +115,7 @@ export class RoomsService {
   }
 
   private generateCode(): string {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // без похожих символов
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
     for (let i = 0; i < 6; i += 1) code += alphabet[randomInt(alphabet.length)];
     return code;

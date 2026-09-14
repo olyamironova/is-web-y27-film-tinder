@@ -25,7 +25,6 @@ export class AdminController {
   @Render('movies/index')
   async index(@Query('session') session?: string) {
     const page = await this.movies.findPage(1, 100);
-    // ?session=guest демонстрирует неавторизованное состояние шапки (ЛР 1)
     const user = session === 'guest' ? undefined : { name: 'Администратор' };
     return { title: 'Управление фильмами', movies: page.data, user };
   }

@@ -47,7 +47,6 @@ export class ObjectStorageService {
     return `/uploads/avatars/${filename}`;
   }
 
-  // Удаляет объект аватара из S3 (или локальный файл), освобождая место
   async deleteAvatar(url: string): Promise<void> {
     const match = url.match(/avatars\/[^/?#]+$/);
     if (!match) return;
@@ -57,11 +56,9 @@ export class ObjectStorageService {
       if (this.client && bucket) {
         await this.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
       } else {
-        // key = "avatars/<file>" -> public/uploads/avatars/<file>
         await unlink(join(process.cwd(), 'public', 'uploads', key));
       }
     } catch (error) {
-      // Не критично: запись из истории всё равно удаляем, а файл могли убрать ранее
       this.logger.warn(`Не удалось удалить аватар ${key}: ${String(error)}`);
     }
   }

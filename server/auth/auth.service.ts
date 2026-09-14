@@ -43,7 +43,6 @@ export class AuthService {
     return this.issueToken(user);
   }
 
-  // Сессия для навбара: помимо данных из токена подтягиваем актуальный avatarUrl из БД
   async sessionUser(request: Request): Promise<(AuthenticatedUser & { avatarUrl: string }) | null> {
     const authenticated = await this.authenticateRequest(request);
     if (!authenticated) return null;
