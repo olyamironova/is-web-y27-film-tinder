@@ -3,6 +3,8 @@ erDiagram
   MOVIE ||--o{ SWIPE : receives
   USER ||--o{ FRIENDSHIP : requests
   USER ||--o{ FRIENDSHIP : receives
+  USER ||--o{ REVIEW : writes
+  MOVIE ||--o{ REVIEW : has
   MOVIE ||--o{ CREDIT : has
   MOVIE }o--o{ GENRE : classified_as
 
@@ -11,6 +13,8 @@ erDiagram
     string email UK
     string password_hash
     string name
+    string avatar_url
+    text avatar_urls
     enum role
   }
   MOVIE {
@@ -41,4 +45,11 @@ erDiagram
     uuid requester_id FK
     uuid addressee_id FK
     enum status
+  }
+  REVIEW {
+    uuid id PK
+    uuid user_id FK
+    uuid movie_id FK
+    smallint rating
+    string text
   }
