@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Movie } from '../types';
-import { Shuffle, Flame, Star } from 'lucide-react';
+import { Shuffle, Search, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 
@@ -9,10 +9,31 @@ export function Recommendations() {
     const [random, setRandom] = useState<Movie | null>(null);
     const [movies, setMovies] = useState<Movie[]>([]);
     const [error, setError] = useState('');
+    const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
+    const [search, setSearch] = useState('');
+    const [genre, setGenre] = useState('');
+    const [yearFrom, setYearFrom] = useState('');
+    const [yearTo, setYearTo] = useState('');
 
     useEffect(() => {
-        api.recommendations().then(setMovies).catch(() => setError('Не удалось загрузить рекомендации'));
+        api.genres().then(setGenres).catch(() => undefined);
     }, []);
+
+    // Каталог с фильтрами; поиск по названию с debounce
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            api.searchMovies({
+                search: search.trim() || undefined,
+                genre: genre || undefined,
+                yearFrom: Number(yearFrom) || undefined,
+                yearTo: Number(yearTo) || undefined,
+            }).then(({ data }) => { setMovies(data); setError(''); })
+              .catch(() => setError('Не удалось загрузить каталог'));
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search, genre, yearFrom, yearTo]);
+
+    const resetFilters = () => { setSearch(''); setGenre(''); setYearFrom(''); setYearTo(''); };
 
     const pickRandom = async () => {
         try {
@@ -37,8 +58,8 @@ export function Recommendations() {
                         onClick={() => setTab('feed')}
                         className={`flex-1 py-3 md:py-4 rounded-xl flex flex-col items-center gap-2 transition-all ${tab === 'feed' ? 'bg-primary text-white shadow-lg scale-105' : 'bg-surface text-subtext'}`}
                     >
-                        <Flame size={20} className="md:w-6 md:h-6" />
-                        <span className="font-semibold text-xs md:text-sm">Поиск</span>
+                        <Search size={20} className="md:w-6 md:h-6" />
+                        <span className="font-semibold text-xs md:text-sm">Каталог</span>
                     </button>
                     <button
                         onClick={shuffle}
@@ -52,8 +73,24 @@ export function Recommendations() {
 
             {tab === 'feed' && (
                 <div className="flex-1 overflow-y-auto">
+                    <div className="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 sticky top-0 bg-background/80 backdrop-blur-md py-2 z-10">
+                        <div className="relative flex-1 min-w-[160px]">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtext" />
+                            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по названию…" className="w-full bg-surface border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm" />
+                        </div>
+                        <select value={genre} onChange={(e) => setGenre(e.target.value)} className="bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm">
+                            <option value="">Все жанры</option>
+                            {genres.map((g) => <option key={g.id} value={g.name}>{g.name}</option>)}
+                        </select>
+                        <input value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} type="number" min={1888} max={2100} placeholder="год с" className="w-20 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm" />
+                        <input value={yearTo} onChange={(e) => setYearTo(e.target.value)} type="number" min={1888} max={2100} placeholder="по" className="w-20 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm" />
+                        {(search || genre || yearFrom || yearTo) && (
+                            <button onClick={resetFilters} className="px-3 py-2 bg-white/10 rounded-xl text-sm hover:bg-white/20 transition-colors">Сброс</button>
+                        )}
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                         {error && <p className="col-span-full text-red-400">{error}</p>}
+                        {!error && movies.length === 0 && <p className="col-span-full text-subtext py-8 text-center">Ничего не найдено. Измените фильтры.</p>}
                         {movies.map(movie => (
                             <Link key={movie.id} to={`/movie/${movie.id}`} className="block group">
                                 <div className="relative h-36 md:h-48 rounded-xl overflow-hidden mb-2 md:mb-3">

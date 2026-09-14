@@ -61,6 +61,37 @@ export class MoviesService {
     return result;
   }
 
+  async search(
+    filters: { search?: string; genre?: string; yearFrom?: number; yearTo?: number },
+    page = 1,
+    limit = 20,
+  ): Promise<MoviePage> {
+    const qb = this.movies.createQueryBuilder('movie')
+      .leftJoinAndSelect('movie.genres', 'genre')
+      .leftJoinAndSelect('movie.credits', 'credit')
+      .orderBy('movie.rating', 'DESC')
+      .addOrderBy('movie.title', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (filters.search) qb.andWhere('movie.title ILIKE :search', { search: `%${filters.search}%` });
+    // Жанр через подзапрос, чтобы не «обрезать» загружаемые жанры фильма
+    if (filters.genre) {
+      qb.andWhere(
+        'movie.id IN (SELECT mg.movie_id FROM movie_genres mg INNER JOIN genres g ON g.id = mg.genre_id WHERE g.name = :genre)',
+        { genre: filters.genre },
+      );
+    }
+    if (filters.yearFrom != null) qb.andWhere('movie.year >= :yearFrom', { yearFrom: filters.yearFrom });
+    if (filters.yearTo != null) qb.andWhere('movie.year <= :yearTo', { yearTo: filters.yearTo });
+
+    const [movies, total] = await qb.getManyAndCount();
+    return {
+      data: movies.map((movie) => this.toView(movie)),
+      meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+    };
+  }
+
   async findOneEntity(id: string): Promise<Movie> {
     const movie = await this.movies.findOne({ where: { id }, relations: { genres: true, credits: true } });
     if (!movie) throw new NotFoundException('Фильм не найден');
