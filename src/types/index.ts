@@ -37,6 +37,20 @@ export interface User {
     outgoingRequests?: FriendRequest[];
 }
 
+export interface Review {
+    id: string;
+    rating: number;
+    text: string;
+    createdAt: string;
+    author: { id: string; name: string; avatarUrl: string };
+}
+
+export interface ReviewList {
+    average: number | null;
+    count: number;
+    reviews: Review[];
+}
+
 export interface MoviePage {
     data: Movie[];
     meta: {

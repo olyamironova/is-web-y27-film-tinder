@@ -1,4 +1,4 @@
-import type { Movie, MoviePage, SessionUser, User } from '../types';
+import type { Movie, MoviePage, ReviewList, SessionUser, User } from '../types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -28,6 +28,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const api = {
   movies: (page = 1, limit = 100) => request<MoviePage>(`/api/movies?page=${page}&limit=${limit}`),
   movie: (id: string) => request<Movie>(`/api/movies/${id}`),
+  reviews: (movieId: string) => request<ReviewList>(`/api/movies/${movieId}/reviews`),
+  submitReview: (movieId: string, rating: number, text: string) => request<ReviewList>(`/api/movies/${movieId}/reviews`, {
+    method: 'POST', body: JSON.stringify({ rating, text }),
+  }),
+  deleteReview: (movieId: string) => request<ReviewList>(`/api/movies/${movieId}/reviews`, { method: 'DELETE' }),
   recommendations: () => request<Movie[]>('/api/movies/recommendations'),
   deck: () => request<Movie[]>('/api/movies/deck'),
   randomMovie: () => request<Movie>('/api/movies/random'),

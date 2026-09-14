@@ -13,10 +13,12 @@ import { ElapsedTimeInterceptor } from './common/interceptors/elapsed-time.inter
 import { DatabaseModule } from './database/database.module.js';
 import { InitialSchema1760000000000 } from './database/migrations/1760000000000-initial-schema.js';
 import { AddWatchLater1760000001000 } from './database/migrations/1760000001000-add-watch-later.js';
+import { AddReviews1760000002000 } from './database/migrations/1760000002000-add-reviews.js';
 import { GenresModule } from './genres/genres.module.js';
 import { Genre } from './genres/genre.entity.js';
 import { Credit } from './movies/entities/credit.entity.js';
 import { Movie } from './movies/entities/movie.entity.js';
+import { Review } from './movies/entities/review.entity.js';
 import { MoviesModule } from './movies/movies.module.js';
 import { Friendship } from './users/entities/friendship.entity.js';
 import { Swipe } from './users/entities/swipe.entity.js';
@@ -32,8 +34,8 @@ import { UsersModule } from './users/users.module.js';
       useFactory: (config: ConfigService) => ({
         type: 'postgres' as const,
         url: config.get<string>('DATABASE_URL', 'postgresql://film_tinder:film_tinder@localhost:5432/film_tinder'),
-        entities: [User, Movie, Genre, Credit, Swipe, Friendship],
-        migrations: [InitialSchema1760000000000, AddWatchLater1760000001000],
+        entities: [User, Movie, Genre, Credit, Swipe, Friendship, Review],
+        migrations: [InitialSchema1760000000000, AddWatchLater1760000001000, AddReviews1760000002000],
         migrationsRun: true,
         synchronize: false,
         ssl: config.get<string>('DATABASE_SSL') === 'true' ? { rejectUnauthorized: false } : false,
