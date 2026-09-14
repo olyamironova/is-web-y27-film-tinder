@@ -52,6 +52,15 @@ export interface ReviewList {
     reviews: Review[];
 }
 
+export interface RoomState {
+    code: string;
+    host: { id: string; name: string };
+    guest: { id: string; name: string } | null;
+    matches: Movie[];
+    role: 'host' | 'guest';
+    ready: boolean;
+}
+
 export interface MoviePage {
     data: Movie[];
     meta: {

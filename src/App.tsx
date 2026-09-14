@@ -4,6 +4,7 @@ import { Home } from './pages/Home';
 import { MovieDetail } from './pages/MovieDetail';
 import { Account } from './pages/Account';
 import { Recommendations } from './pages/Recommendations';
+import { Room } from './pages/Room';
 import { Auth } from './pages/Auth';
 import { SessionProvider } from './components/SessionProvider';
 
@@ -17,6 +18,8 @@ function App() {
           <Route path="/movie/:id" element={<MovieDetail />} />
           <Route path="/account" element={<Account />} />
           <Route path="/recommendations" element={<Recommendations />} />
+          <Route path="/room" element={<Room />} />
+          <Route path="/room/:code" element={<Room />} />
           <Route path="/login" element={<Auth mode="login" />} />
           <Route path="/register" element={<Auth mode="register" />} />
         </Routes>

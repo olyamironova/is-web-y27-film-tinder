@@ -1,4 +1,4 @@
-import type { Movie, MoviePage, ReviewList, SessionUser, User } from '../types';
+import type { Movie, MoviePage, ReviewList, RoomState, SessionUser, User } from '../types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -57,6 +57,11 @@ export const api = {
   myWatchlist: () => request<Movie[]>('/api/users/me/watchlist'),
   friendLikes: (userId: string) => request<Movie[]>(`/api/users/${userId}/likes`),
   matches: (userId: string) => request<Movie[]>(`/api/users/${userId}/matches`),
+  createRoom: () => request<RoomState>('/api/rooms', { method: 'POST' }),
+  joinRoom: (code: string) => request<RoomState>(`/api/rooms/${code}/join`, { method: 'POST' }),
+  getRoom: (code: string) => request<RoomState>(`/api/rooms/${code}`),
+  roomSwipe: (code: string, movieId: string, direction: 'like' | 'dislike') =>
+    request<{ matched: boolean }>(`/api/rooms/${code}/swipe`, { method: 'POST', body: JSON.stringify({ movieId, direction }) }),
   removeSwipe: (movieId: string) => request<void>(`/api/movies/${movieId}/swipes`, { method: 'DELETE' }),
   login: (email: string, password: string) => request<{ user: SessionUser }>('/api/auth/login', {
     method: 'POST', body: JSON.stringify({ email, password }),

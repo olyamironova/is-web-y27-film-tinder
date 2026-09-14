@@ -13,7 +13,7 @@ export class AppController {
   }
 
   @Public()
-  @Get(['/', '/login', '/register', '/account', '/recommendations', '/movie/:id'])
+  @Get(['/', '/login', '/register', '/account', '/recommendations', '/movie/:id', '/room', '/room/:code'])
   spa(@Res() response: Response): void {
     const indexPath = join(process.cwd(), 'dist', 'client', 'index.html');
     if (!existsSync(indexPath)) {

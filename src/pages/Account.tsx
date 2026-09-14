@@ -269,6 +269,7 @@ export function Account() {
                 ) : (
                     <button onClick={() => setIsEditing(true)} className="w-full py-4 bg-surface rounded-xl flex items-center justify-center gap-2 text-subtext"><Settings size={20} />Настройки</button>
                 )}
+                {!isEditing && <Link to="/room" className="w-full py-4 bg-white/5 rounded-xl flex items-center justify-center gap-2 font-semibold hover:bg-white/10 transition-colors">🍿 Совместный просмотр</Link>}
                 {user.role === 'admin' && <a href="/admin/movies" className="block text-center w-full py-4 bg-white/5 rounded-xl font-semibold">Администрирование фильмов</a>}
                 <button onClick={logout} className="w-full py-4 bg-white/5 rounded-xl flex items-center justify-center gap-2 text-subtext"><LogOut size={20} />Выйти</button>
             </div>

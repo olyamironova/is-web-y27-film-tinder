@@ -21,6 +21,7 @@ import { Credit } from './movies/entities/credit.entity.js';
 import { Movie } from './movies/entities/movie.entity.js';
 import { Review } from './movies/entities/review.entity.js';
 import { MoviesModule } from './movies/movies.module.js';
+import { RoomsModule } from './rooms/rooms.module.js';
 import { Friendship } from './users/entities/friendship.entity.js';
 import { Swipe } from './users/entities/swipe.entity.js';
 import { User } from './users/entities/user.entity.js';
@@ -71,6 +72,7 @@ import { UsersModule } from './users/users.module.js';
     UsersModule,
     DatabaseModule,
     AdminModule,
+    RoomsModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_INTERCEPTOR, useClass: ElapsedTimeInterceptor }],
