@@ -53,7 +53,7 @@ pnpm dev
 
 Vite работает на `5173` и проксирует `/api`, `/graphql`, `/uploads` на NestJS (`3000`).
 
-## Что реализовано по лабораторным
+## Реализация
 
 1. NestJS читает `PORT`, отдаёт production-сборку React и Handlebars MVC-представления с partials для header/menu/session/content/footer/movie card. Добавлен `render.yaml`.
 2. PostgreSQL + TypeORM, автоматическая миграция и шесть связанных сущностей. Исходные данные не перезаписываются; seed выполняется только для пустого каталога.
