@@ -15,6 +15,8 @@ export function Recommendations() {
     const [genre, setGenre] = useState('');
     const [yearFrom, setYearFrom] = useState('');
     const [yearTo, setYearTo] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     useEffect(() => {
         api.genres().then(setGenres).catch(() => undefined);
@@ -31,13 +33,14 @@ export function Recommendations() {
                 genre: genre || undefined,
                 yearFrom: Number(yearFrom) || undefined,
                 yearTo: Number(yearTo) || undefined,
-            }).then(({ data }) => { setMovies(data); setError(''); })
+                page,
+            }).then(({ data, meta }) => { setMovies(data); setTotalPages(meta.totalPages); setError(''); })
               .catch(() => setError('Не удалось загрузить каталог'));
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, genre, yearFrom, yearTo]);
+    }, [search, genre, yearFrom, yearTo, page]);
 
-    const resetFilters = () => { setSearch(''); setGenre(''); setYearFrom(''); setYearTo(''); };
+    const resetFilters = () => { setSearch(''); setGenre(''); setYearFrom(''); setYearTo(''); setPage(1); };
 
     const pickRandom = async () => {
         try {
@@ -110,14 +113,14 @@ export function Recommendations() {
                     <div className="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 sticky top-0 bg-background/80 backdrop-blur-md py-2 z-10">
                         <div className="relative flex-1 min-w-[160px]">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtext" />
-                            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по названию…" className="w-full bg-surface border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm" />
+                            <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Поиск по названию…" className="w-full bg-surface border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm" />
                         </div>
-                        <select value={genre} onChange={(e) => setGenre(e.target.value)} className="bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm">
+                        <select value={genre} onChange={(e) => { setGenre(e.target.value); setPage(1); }} className="bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm">
                             <option value="">Все жанры</option>
                             {genres.map((g) => <option key={g.id} value={g.name}>{g.name}</option>)}
                         </select>
-                        <input value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} type="number" min={1888} max={2100} placeholder="год с" className="w-20 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm" />
-                        <input value={yearTo} onChange={(e) => setYearTo(e.target.value)} type="number" min={1888} max={2100} placeholder="по" className="w-20 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm" />
+                        <input value={yearFrom} onChange={(e) => { setYearFrom(e.target.value); setPage(1); }} type="number" min={1888} max={2100} placeholder="год с" className="w-20 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm" />
+                        <input value={yearTo} onChange={(e) => { setYearTo(e.target.value); setPage(1); }} type="number" min={1888} max={2100} placeholder="по" className="w-20 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm" />
                         {(search || genre || yearFrom || yearTo) && (
                             <button onClick={resetFilters} className="px-3 py-2 bg-white/10 rounded-xl text-sm hover:bg-white/20 transition-colors">Сброс</button>
                         )}
@@ -140,6 +143,13 @@ export function Recommendations() {
                             </Link>
                         ))}
                     </div>
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-3 mt-6">
+                            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 bg-surface border border-white/10 rounded-xl text-sm disabled:opacity-40 hover:bg-white/10 transition-colors">← Назад</button>
+                            <span className="text-sm text-subtext">Стр. {page} из {totalPages}</span>
+                            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 bg-surface border border-white/10 rounded-xl text-sm disabled:opacity-40 hover:bg-white/10 transition-colors">Вперёд →</button>
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -28,13 +28,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const api = {
   movies: (page = 1, limit = 100) => request<MoviePage>(`/api/movies?page=${page}&limit=${limit}`),
   genres: () => request<{ id: string; name: string }[]>('/api/genres'),
-  searchMovies: (params: { search?: string; genre?: string; yearFrom?: number; yearTo?: number; limit?: number }) => {
+  searchMovies: (params: { search?: string; genre?: string; yearFrom?: number; yearTo?: number; page?: number; limit?: number }) => {
     const qs = new URLSearchParams();
     if (params.search) qs.set('search', params.search);
     if (params.genre) qs.set('genre', params.genre);
     if (params.yearFrom != null) qs.set('yearFrom', String(params.yearFrom));
     if (params.yearTo != null) qs.set('yearTo', String(params.yearTo));
-    qs.set('limit', String(params.limit ?? 60));
+    qs.set('page', String(params.page ?? 1));
+    qs.set('limit', String(params.limit ?? 12));
     return request<MoviePage>(`/api/movies?${qs.toString()}`);
   },
   movie: (id: string) => request<Movie>(`/api/movies/${id}`),
