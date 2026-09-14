@@ -40,6 +40,10 @@ export class User {
   @Column({ name: 'avatar_url', type: 'varchar', nullable: true })
   avatarUrl: string | null;
 
+  // История загруженных аватаров (для карусели выбора и очистки S3)
+  @Column({ name: 'avatar_urls', type: 'text', array: true, default: () => "'{}'" })
+  avatarUrls: string[];
+
   @Field(() => UserRole)
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;

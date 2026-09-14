@@ -26,6 +26,7 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { PaginationQueryDto } from '../common/dto.js';
 import { AuthenticatedUser } from '../common/types/authenticated-request.js';
 import { FriendEventsService } from './friend-events.service.js';
+import { AvatarUrlDto } from './dto/avatar-url.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { CreateFriendshipDto } from './dto/create-friendship.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
@@ -74,6 +75,18 @@ export class UsersController {
     })) file: Express.Multer.File,
   ) {
     return this.users.setAvatar(user.id, file);
+  }
+
+  @Patch('me/avatar')
+  @ApiOkResponse({ description: 'Select a previously uploaded avatar as current' })
+  selectAvatar(@CurrentUser() user: AuthenticatedUser, @Body() input: AvatarUrlDto) {
+    return this.users.selectAvatar(user.id, input.url);
+  }
+
+  @Delete('me/avatar')
+  @ApiOkResponse({ description: 'Delete an avatar from history and storage' })
+  deleteAvatar(@CurrentUser() user: AuthenticatedUser, @Body() input: AvatarUrlDto) {
+    return this.users.deleteAvatar(user.id, input.url);
   }
 
   @Get('me/likes')

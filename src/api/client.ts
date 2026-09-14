@@ -63,8 +63,14 @@ export const api = {
   uploadAvatar: (file: File) => {
     const body = new FormData();
     body.append('file', file);
-    return request<{ avatarUrl: string }>('/api/users/me/avatar', { method: 'POST', body });
+    return request<User>('/api/users/me/avatar', { method: 'POST', body });
   },
+  selectAvatar: (url: string) => request<User>('/api/users/me/avatar', {
+    method: 'PATCH', body: JSON.stringify({ url }),
+  }),
+  deleteAvatar: (url: string) => request<User>('/api/users/me/avatar', {
+    method: 'DELETE', body: JSON.stringify({ url }),
+  }),
   requestFriend: (email: string) => request<{ id: string }>('/api/users/me/friends', {
     method: 'POST', body: JSON.stringify({ email }),
   }),

@@ -27,6 +27,7 @@ export interface User {
     email?: string;
     name: string;
     avatarUrl: string;
+    avatarUrls?: string[];
     role?: 'user' | 'admin';
     likedMovies: string[];
     dislikedMovies?: string[];

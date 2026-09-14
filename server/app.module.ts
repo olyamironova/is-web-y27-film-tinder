@@ -14,6 +14,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { InitialSchema1760000000000 } from './database/migrations/1760000000000-initial-schema.js';
 import { AddWatchLater1760000001000 } from './database/migrations/1760000001000-add-watch-later.js';
 import { AddReviews1760000002000 } from './database/migrations/1760000002000-add-reviews.js';
+import { AddAvatarHistory1760000003000 } from './database/migrations/1760000003000-add-avatar-history.js';
 import { GenresModule } from './genres/genres.module.js';
 import { Genre } from './genres/genre.entity.js';
 import { Credit } from './movies/entities/credit.entity.js';
@@ -35,7 +36,7 @@ import { UsersModule } from './users/users.module.js';
         type: 'postgres' as const,
         url: config.get<string>('DATABASE_URL', 'postgresql://film_tinder:film_tinder@localhost:5432/film_tinder'),
         entities: [User, Movie, Genre, Credit, Swipe, Friendship, Review],
-        migrations: [InitialSchema1760000000000, AddWatchLater1760000001000, AddReviews1760000002000],
+        migrations: [InitialSchema1760000000000, AddWatchLater1760000001000, AddReviews1760000002000, AddAvatarHistory1760000003000],
         migrationsRun: true,
         synchronize: false,
         ssl: config.get<string>('DATABASE_SSL') === 'true' ? { rejectUnauthorized: false } : false,

@@ -64,11 +64,31 @@ export function Account() {
         const file = event.target.files?.[0];
         if (!file || !user) return;
         try {
-            const { avatarUrl } = await api.uploadAvatar(file);
-            setUser({ ...user, avatarUrl });
-            updateAvatar(avatarUrl); // мгновенно обновляем аватар в навбаре
+            const profile = await api.uploadAvatar(file);
+            setUser(profile);
+            updateAvatar(profile.avatarUrl); // мгновенно обновляем аватар в навбаре
         } catch (caught) {
             setMessage(caught instanceof ApiError ? caught.message : 'Не удалось загрузить аватар');
+        }
+    };
+
+    const chooseAvatar = async (url: string) => {
+        try {
+            const profile = await api.selectAvatar(url);
+            setUser(profile);
+            updateAvatar(profile.avatarUrl);
+        } catch (caught) {
+            setMessage(caught instanceof ApiError ? caught.message : 'Не удалось выбрать аватар');
+        }
+    };
+
+    const removeAvatar = async (url: string) => {
+        try {
+            const profile = await api.deleteAvatar(url);
+            setUser(profile);
+            updateAvatar(profile.avatarUrl);
+        } catch (caught) {
+            setMessage(caught instanceof ApiError ? caught.message : 'Не удалось удалить аватар');
         }
     };
 
@@ -178,6 +198,22 @@ export function Account() {
                     <div className="flex flex-col gap-2 w-full max-w-xs text-center">
                         <input value={name} onChange={(event) => setName(event.target.value)} className="bg-surface border border-white/10 p-2 rounded-lg text-center" placeholder="Имя" />
                         <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" className="bg-surface border border-white/10 p-2 rounded-lg text-center" placeholder="Email" />
+                    </div>
+                )}
+
+                {isEditing && user.avatarUrls && user.avatarUrls.length > 0 && (
+                    <div className="mt-5 w-full max-w-sm">
+                        <div className="text-xs text-subtext uppercase mb-2 text-center">Ваши аватары</div>
+                        <div className="flex gap-3 pb-2 justify-center flex-wrap">
+                            {user.avatarUrls.map((url) => (
+                                <div key={url} className="relative shrink-0">
+                                    <button onClick={() => chooseAvatar(url)} title="Сделать текущим" className={`w-14 h-14 rounded-full overflow-hidden border-2 transition-colors ${url === user.avatarUrl ? 'border-primary' : 'border-white/10 hover:border-white/40'}`}>
+                                        <img src={url} alt="avatar" className="w-full h-full object-cover" />
+                                    </button>
+                                    <button onClick={() => removeAvatar(url)} title="Удалить" className="absolute -top-1 -right-1 bg-black/70 hover:bg-black text-white rounded-full p-0.5"><X size={12} /></button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

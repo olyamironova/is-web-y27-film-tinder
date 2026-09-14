@@ -1,12 +1,13 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, unlink, writeFile } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { extname, join } from 'path';
 
 @Injectable()
 export class ObjectStorageService {
+  private readonly logger = new Logger(ObjectStorageService.name);
   private readonly client: S3Client | null;
 
   constructor(private readonly config: ConfigService) {
@@ -44,5 +45,24 @@ export class ObjectStorageService {
     const filename = key.split('/').pop()!;
     await writeFile(join(directory, filename), file.buffer);
     return `/uploads/avatars/${filename}`;
+  }
+
+  // Удаляет объект аватара из S3 (или локальный файл), освобождая место
+  async deleteAvatar(url: string): Promise<void> {
+    const match = url.match(/avatars\/[^/?#]+$/);
+    if (!match) return;
+    const key = match[0];
+    const bucket = this.config.get<string>('S3_BUCKET');
+    try {
+      if (this.client && bucket) {
+        await this.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+      } else {
+        // key = "avatars/<file>" -> public/uploads/avatars/<file>
+        await unlink(join(process.cwd(), 'public', 'uploads', key));
+      }
+    } catch (error) {
+      // Не критично: запись из истории всё равно удаляем, а файл могли убрать ранее
+      this.logger.warn(`Не удалось удалить аватар ${key}: ${String(error)}`);
+    }
   }
 }

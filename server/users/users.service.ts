@@ -40,6 +40,7 @@ export class UsersService {
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl ?? '',
+      avatarUrls: user.avatarUrls,
       role: user.role,
       likedMovies: likes.map((movie) => movie.id),
       dislikedMovies: dislikes.map((movie) => movie.id),
@@ -144,9 +145,29 @@ export class UsersService {
 
   async setAvatar(id: string, file: Express.Multer.File) {
     const user = await this.findOne(id);
-    user.avatarUrl = await this.storage.uploadAvatar(file);
+    const url = await this.storage.uploadAvatar(file);
+    user.avatarUrl = url;
+    if (!user.avatarUrls.includes(url)) user.avatarUrls = [...user.avatarUrls, url];
     await this.users.save(user);
-    return { avatarUrl: user.avatarUrl };
+    return this.profile(id);
+  }
+
+  async selectAvatar(id: string, url: string) {
+    const user = await this.findOne(id);
+    if (!user.avatarUrls.includes(url)) throw new NotFoundException('Аватар не найден в вашей истории');
+    user.avatarUrl = url;
+    await this.users.save(user);
+    return this.profile(id);
+  }
+
+  async deleteAvatar(id: string, url: string) {
+    const user = await this.findOne(id);
+    if (!user.avatarUrls.includes(url)) throw new NotFoundException('Аватар не найден в вашей истории');
+    user.avatarUrls = user.avatarUrls.filter((item) => item !== url);
+    if (user.avatarUrl === url) user.avatarUrl = user.avatarUrls[user.avatarUrls.length - 1] ?? null;
+    await this.users.save(user);
+    await this.storage.deleteAvatar(url); // освобождаем место в S3
+    return this.profile(id);
   }
 
   async requestFriend(userId: string, email: string) {
