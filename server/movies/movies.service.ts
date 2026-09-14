@@ -202,6 +202,16 @@ export class MoviesService {
     return this.swipedByUser(userId, SwipeDirection.WATCH_LATER);
   }
 
+  // Мэтчи: фильмы, которые лайкнули оба пользователя (пересечение лайков)
+  async matchedMovies(userA: string, userB: string): Promise<MovieView[]> {
+    const [likesA, likesB] = await Promise.all([
+      this.swipedByUser(userA, SwipeDirection.LIKE),
+      this.swipedByUser(userB, SwipeDirection.LIKE),
+    ]);
+    const likedByB = new Set(likesB.map((movie) => movie.id));
+    return likesA.filter((movie) => likedByB.has(movie.id));
+  }
+
   private async swipedByUser(userId: string, direction: SwipeDirection): Promise<MovieView[]> {
     const swipes = await this.swipes.find({
       where: { userId, direction },

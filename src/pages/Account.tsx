@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, Camera, Check, Clock, Heart, LogOut, Settings, ThumbsDown, UserMinus, UserPlus, Users, X } from 'lucide-react';
+import { Bookmark, Camera, Check, Clock, Heart, LogOut, Settings, Sparkles, ThumbsDown, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { useSession } from '../hooks/useSession';
 import type { Movie, User } from '../types';
@@ -132,6 +132,7 @@ export function Account() {
     const openWatchlist = () => showLikes('Посмотреть позже', api.myWatchlist, true);
     const scrollToFriends = () => friendsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const openFriendLikes = (friend: User) => showLikes(`Нравится · ${friend.name}`, () => api.friendLikes(friend.id), false);
+    const openFriendMatches = (friend: User) => showLikes(`Мэтчи · ${friend.name}`, () => api.matches(friend.id), false);
 
     const undoSwipe = async (movieId: string) => {
         try {
@@ -242,7 +243,7 @@ export function Account() {
                     </section>
                 )}
 
-                {!isEditing && <section ref={friendsRef}><div className="flex items-center justify-between gap-4 mb-4"><h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} className="text-primary" />Друзья</h3><button onClick={() => { setMessage(''); setShowFriendModal(true); }} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><UserPlus size={18} />Добавить</button></div><div className="grid md:grid-cols-2 gap-3">{user.friends.map((friend) => <div key={friend.id} className="flex items-center gap-2 bg-surface p-3 rounded-xl"><button onClick={() => openFriendLikes(friend)} title={`Показать лайки: ${friend.name}`} className="flex items-center gap-4 flex-1 min-w-0 text-left"><div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center shrink-0">{friend.avatarUrl ? <img src={friend.avatarUrl} alt={friend.name} className="w-full h-full object-cover" /> : <Users size={20} />}</div><div className="font-semibold truncate flex-1">{friend.name}</div><Heart size={16} className="text-subtext shrink-0" /></button><button onClick={() => unfriend(friend)} title="Удалить из друзей" className="p-2 text-subtext hover:text-primary transition-colors shrink-0"><UserMinus size={18} /></button></div>)}{user.friends.length === 0 && <div className="text-subtext py-4">Нет друзей.</div>}</div></section>}
+                {!isEditing && <section ref={friendsRef}><div className="flex items-center justify-between gap-4 mb-4"><h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} className="text-primary" />Друзья</h3><button onClick={() => { setMessage(''); setShowFriendModal(true); }} className="px-4 py-2 bg-primary rounded-xl font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"><UserPlus size={18} />Добавить</button></div><div className="grid md:grid-cols-2 gap-3">{user.friends.map((friend) => <div key={friend.id} className="flex items-center gap-2 bg-surface p-3 rounded-xl"><button onClick={() => openFriendLikes(friend)} title={`Показать лайки: ${friend.name}`} className="flex items-center gap-4 flex-1 min-w-0 text-left"><div className="w-12 h-12 rounded-full overflow-hidden bg-white/5 flex items-center justify-center shrink-0">{friend.avatarUrl ? <img src={friend.avatarUrl} alt={friend.name} className="w-full h-full object-cover" /> : <Users size={20} />}</div><div className="font-semibold truncate flex-1">{friend.name}</div><Heart size={16} className="text-subtext shrink-0" /></button><button onClick={() => openFriendMatches(friend)} title="Мэтчи — общие лайки" className="p-2 text-subtext hover:text-primary transition-colors shrink-0"><Sparkles size={18} /></button><button onClick={() => unfriend(friend)} title="Удалить из друзей" className="p-2 text-subtext hover:text-primary transition-colors shrink-0"><UserMinus size={18} /></button></div>)}{user.friends.length === 0 && <div className="text-subtext py-4">Нет друзей.</div>}</div></section>}
 
                 {!isEditing && user.outgoingRequests && user.outgoingRequests.length > 0 && (
                     <section>

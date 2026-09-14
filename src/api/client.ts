@@ -56,6 +56,7 @@ export const api = {
   myDislikes: () => request<Movie[]>('/api/users/me/dislikes'),
   myWatchlist: () => request<Movie[]>('/api/users/me/watchlist'),
   friendLikes: (userId: string) => request<Movie[]>(`/api/users/${userId}/likes`),
+  matches: (userId: string) => request<Movie[]>(`/api/users/${userId}/matches`),
   removeSwipe: (movieId: string) => request<void>(`/api/movies/${movieId}/swipes`, { method: 'DELETE' }),
   login: (email: string, password: string) => request<{ user: SessionUser }>('/api/auth/login', {
     method: 'POST', body: JSON.stringify({ email, password }),

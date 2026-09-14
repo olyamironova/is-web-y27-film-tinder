@@ -110,6 +110,18 @@ export class UsersService {
     return this.movies.likedByUser(targetId);
   }
 
+  async matchesWith(userId: string, friendId: string) {
+    const friendship = await this.friendships.findOne({
+      where: [
+        { requesterId: userId, addresseeId: friendId, status: FriendshipStatus.ACCEPTED },
+        { requesterId: friendId, addresseeId: userId, status: FriendshipStatus.ACCEPTED },
+      ],
+    });
+    if (!friendship) throw new ForbiddenException('Мэтчи доступны только с друзьями');
+    await this.findOne(friendId);
+    return this.movies.matchedMovies(userId, friendId);
+  }
+
   async findAll(page: number, limit: number) {
     const [data, total] = await this.users.findAndCount({
       order: { createdAt: 'DESC' },

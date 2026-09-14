@@ -113,6 +113,12 @@ export class UsersController {
     return this.users.friendLikes(user.id, id);
   }
 
+  @Get(':id/matches')
+  @ApiOkResponse({ description: 'Movies both the current user and the friend liked (matches)' })
+  matches(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.users.matchesWith(user.id, id);
+  }
+
   @Post('me/friends')
   requestFriend(@CurrentUser() user: AuthenticatedUser, @Body() input: CreateFriendshipDto) {
     return this.users.requestFriend(user.id, input.email);
