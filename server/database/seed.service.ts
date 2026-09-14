@@ -17,14 +17,6 @@ const SEED_MOVIES = [
   ['Форрест Гамп', 1994, 8.8, ['Драма', 'Мелодрама'], 'Роберт Земекис', ['Том Хэнкс', 'Робин Райт']],
   ['Начало', 2010, 8.8, ['Фантастика', 'Боевик', 'Триллер'], 'Кристофер Нолан', ['Леонардо ДиКаприо', 'Том Харди']],
   ['Матрица', 1999, 8.7, ['Фантастика', 'Боевик'], 'Лана и Лилли Вачовски', ['Киану Ривз', 'Кэрри-Энн Мосс']],
-  ['Зелёная миля', 1999, 9.0, ['Драма', 'Фэнтези', 'Криминал'], 'Фрэнк Дарабонт', ['Том Хэнкс', 'Майкл Кларк Дункан', 'Дэвид Морс']],
-  ['Властелин колец: Возвращение короля', 2003, 8.9, ['Фэнтези', 'Приключения', 'Драма'], 'Питер Джексон', ['Элайджа Вуд', 'Вигго Мортенсен', 'Иэн Маккеллен']],
-  ['Список Шиндлера', 1993, 8.8, ['Драма', 'История', 'Военный'], 'Стивен Спилберг', ['Лиам Нисон', 'Бен Кингсли', 'Рэйф Файнс']],
-  ['Бойцовский клуб', 1999, 8.7, ['Драма', 'Триллер'], 'Дэвид Финчер', ['Брэд Питт', 'Эдвард Нортон', 'Хелена Бонем Картер']],
-  ['Гладиатор', 2000, 8.5, ['Боевик', 'Драма', 'Приключения'], 'Ридли Скотт', ['Рассел Кроу', 'Хоакин Феникс', 'Конни Нильсен']],
-  ['Джанго освобождённый', 2012, 8.4, ['Вестерн', 'Драма'], 'Квентин Тарантино', ['Джейми Фокс', 'Кристоф Вальц', 'Леонардо ДиКаприо']],
-  ['Титаник', 1997, 8.4, ['Драма', 'Мелодрама'], 'Джеймс Кэмерон', ['Леонардо ДиКаприо', 'Кейт Уинслет', 'Билли Зейн']],
-  ['Волк с Уолл-стрит', 2013, 8.0, ['Драма', 'Комедия', 'Криминал'], 'Мартин Скорсезе', ['Леонардо ДиКаприо', 'Джона Хилл', 'Марго Робби']],
 ] as const;
 
 @Injectable()
@@ -41,18 +33,9 @@ export class SeedService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     await this.seedUsers();
     const catalog = await this.movies.findPage(1, 100);
-    await this.seedMovies(catalog.data);
-  }
-
-  private async seedMovies(catalog: Awaited<ReturnType<MoviesService['findPage']>>['data']): Promise<void> {
-    let created = 0;
-    let updated = 0;
-
-    for (const [index, [title, year, rating, genres, director, cast]] of SEED_MOVIES.entries()) {
-      const media = SEED_MOVIE_MEDIA[index];
-      const movie = catalog.find((item) => item.title === title);
-
-      if (!movie) {
+    if (catalog.meta.total === 0) {
+      for (const [index, [title, year, rating, genres, director, cast]] of SEED_MOVIES.entries()) {
+        const media = SEED_MOVIE_MEDIA[index];
         await this.movies.create({
           title,
           year,
@@ -64,9 +47,18 @@ export class SeedService implements OnApplicationBootstrap {
           posterUrl: media.posterUrl,
           backdropUrl: media.backdropUrl,
         });
-        created += 1;
-        continue;
       }
+      this.logger.log(`Создан стартовый каталог: ${SEED_MOVIES.length} фильмов`);
+    } else {
+      await this.replacePlaceholderMedia(catalog.data);
+    }
+  }
+
+  private async replacePlaceholderMedia(catalog: Awaited<ReturnType<MoviesService['findPage']>>['data']): Promise<void> {
+    let updated = 0;
+    for (const [index, [title]] of SEED_MOVIES.entries()) {
+      const movie = catalog.find((item) => item.title === title);
+      if (!movie) continue;
 
       const posterUrl = movie.posterUrl.includes('placehold.co') ? SEED_MOVIE_MEDIA[index].posterUrl : undefined;
       const backdropUrl = movie.backdropUrl.includes('placehold.co') ? SEED_MOVIE_MEDIA[index].backdropUrl : undefined;
@@ -75,8 +67,6 @@ export class SeedService implements OnApplicationBootstrap {
         updated += 1;
       }
     }
-
-    if (created) this.logger.log(`Добавлены отсутствующие фильмы стартового каталога: ${created}`);
     if (updated) this.logger.log(`Обновлены постеры стартового каталога: ${updated}`);
   }
 
