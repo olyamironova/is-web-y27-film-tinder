@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { Movie } from '../types';
-import { Shuffle, Search, Star } from 'lucide-react';
+import { Shuffle, Search, Sparkles, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
+import { api, ApiError } from '../api/client';
 
 export function Recommendations() {
-    const [tab, setTab] = useState<'feed' | 'shuffle'>('feed');
+    const [tab, setTab] = useState<'foryou' | 'feed' | 'shuffle'>('foryou');
     const [random, setRandom] = useState<Movie | null>(null);
     const [movies, setMovies] = useState<Movie[]>([]);
+    const [forYou, setForYou] = useState<Movie[]>([]);
     const [error, setError] = useState('');
     const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
     const [search, setSearch] = useState('');
@@ -17,6 +18,11 @@ export function Recommendations() {
 
     useEffect(() => {
         api.genres().then(setGenres).catch(() => undefined);
+        // Персональные рекомендации (жанры + друзья + рейтинг); для гостя — baseline
+        api.deck().catch((caught) => {
+            if (caught instanceof ApiError && caught.status === 401) return api.recommendations();
+            throw caught;
+        }).then(setForYou).catch(() => undefined);
     }, []);
 
     // Каталог с фильтрами; поиск по названию с debounce
@@ -55,6 +61,13 @@ export function Recommendations() {
 
                 <div className="flex gap-3 md:gap-4">
                     <button
+                        onClick={() => setTab('foryou')}
+                        className={`flex-1 py-3 md:py-4 rounded-xl flex flex-col items-center gap-2 transition-all ${tab === 'foryou' ? 'bg-primary text-white shadow-lg scale-105' : 'bg-surface text-subtext'}`}
+                    >
+                        <Sparkles size={20} className="md:w-6 md:h-6" />
+                        <span className="font-semibold text-xs md:text-sm">Для вас</span>
+                    </button>
+                    <button
                         onClick={() => setTab('feed')}
                         className={`flex-1 py-3 md:py-4 rounded-xl flex flex-col items-center gap-2 transition-all ${tab === 'feed' ? 'bg-primary text-white shadow-lg scale-105' : 'bg-surface text-subtext'}`}
                     >
@@ -70,6 +83,29 @@ export function Recommendations() {
                     </button>
                 </div>
             </div>
+
+            {tab === 'foryou' && (
+                <div className="flex-1 overflow-y-auto">
+                    <p className="text-sm text-subtext mb-4">Подобрано по жанрам, которые вы лайкаете, и по вкусам друзей.</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                        {forYou.length === 0 && <p className="col-span-full text-subtext py-8 text-center">Лайкайте фильмы в ленте — здесь появятся персональные рекомендации.</p>}
+                        {forYou.map(movie => (
+                            <Link key={movie.id} to={`/movie/${movie.id}`} className="block group">
+                                <div className="relative h-36 md:h-48 rounded-xl overflow-hidden mb-2 md:mb-3">
+                                    <img src={movie.backdropUrl} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+                                    <div className="absolute top-2 md:top-3 right-2 md:right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1">
+                                        <Star size={10} className="md:w-3 md:h-3 text-yellow-400" fill="currentColor" />
+                                        {movie.rating}
+                                    </div>
+                                </div>
+                                <h3 className="font-bold text-sm md:text-lg leading-tight mb-1 group-hover:text-primary transition-colors">{movie.title}</h3>
+                                <p className="text-xs md:text-sm text-subtext line-clamp-1">{movie.genres.join(', ')}</p>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {tab === 'feed' && (
                 <div className="flex-1 overflow-y-auto">

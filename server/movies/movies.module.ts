@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Genre } from '../genres/genre.entity.js';
+import { Friendship } from '../users/entities/friendship.entity.js';
 import { Swipe } from '../users/entities/swipe.entity.js';
 import { Credit } from './entities/credit.entity.js';
 import { Movie } from './entities/movie.entity.js';
@@ -13,7 +14,7 @@ import { ReviewsController } from './reviews.controller.js';
 import { ReviewsService } from './reviews.service.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Movie, Genre, Credit, Swipe, Review])],
+  imports: [TypeOrmModule.forFeature([Movie, Genre, Credit, Swipe, Review, Friendship])],
   controllers: [MoviesApiController, ReviewsController],
   providers: [MoviesService, MovieEventsService, MoviesResolver, ReviewsService],
   exports: [MoviesService, MovieEventsService],

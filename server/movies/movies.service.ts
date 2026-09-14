@@ -2,8 +2,9 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import { Genre } from '../genres/genre.entity.js';
+import { Friendship, FriendshipStatus } from '../users/entities/friendship.entity.js';
 import { Swipe, SwipeDirection } from '../users/entities/swipe.entity.js';
 import { CreateMovieDto } from './dto/create-movie.dto.js';
 import { UpdateMovieDto } from './dto/update-movie.dto.js';
@@ -37,6 +38,7 @@ export class MoviesService {
     @InjectRepository(Movie) private readonly movies: Repository<Movie>,
     @InjectRepository(Genre) private readonly genres: Repository<Genre>,
     @InjectRepository(Swipe) private readonly swipes: Repository<Swipe>,
+    @InjectRepository(Friendship) private readonly friendships: Repository<Friendship>,
     private readonly dataSource: DataSource,
     private readonly events: MovieEventsService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
@@ -166,18 +168,52 @@ export class MoviesService {
     return { movieId, direction };
   }
 
+  // Персональные рекомендации: аффинность по жанрам своих лайков + коллаборативный
+  // сигнал (что лайкнули друзья) + рейтинг. Для гостя (без userId) — топ по рейтингу.
   async recommendations(userId?: string, limit = 20): Promise<MovieView[]> {
-    let excludedIds: string[] = [];
-    if (userId) {
-      excludedIds = (await this.swipes.find({ where: { userId }, select: { movieId: true } })).map((swipe) => swipe.movieId);
+    if (!userId) {
+      const top = await this.movies.find({ relations: { genres: true, credits: true }, order: { rating: 'DESC' }, take: limit });
+      return top.map((movie) => this.toView(movie));
     }
-    const query = this.movies.createQueryBuilder('movie')
-      .leftJoinAndSelect('movie.genres', 'genre')
-      .leftJoinAndSelect('movie.credits', 'credit')
-      .orderBy('movie.rating', 'DESC')
-      .take(limit);
-    if (excludedIds.length) query.andWhere('movie.id NOT IN (:...excludedIds)', { excludedIds });
-    return (await query.getMany()).map((movie) => this.toView(movie));
+
+    // Свайпы пользователя: исключаем просмотренное и считаем вес жанров по лайкам
+    const userSwipes = await this.swipes.find({ where: { userId }, relations: { movie: { genres: true } } });
+    const swipedIds = userSwipes.map((swipe) => swipe.movieId);
+    const genreWeight = new Map<string, number>();
+    for (const swipe of userSwipes) {
+      if (swipe.direction === SwipeDirection.LIKE) {
+        for (const genre of swipe.movie?.genres ?? []) genreWeight.set(genre.name, (genreWeight.get(genre.name) ?? 0) + 1);
+      }
+    }
+
+    // Друзья и их лайки (коллаборативный сигнал)
+    const friendships = await this.friendships.find({
+      where: [
+        { requesterId: userId, status: FriendshipStatus.ACCEPTED },
+        { addresseeId: userId, status: FriendshipStatus.ACCEPTED },
+      ],
+    });
+    const friendIds = friendships.map((f) => (f.requesterId === userId ? f.addresseeId : f.requesterId));
+    const friendLikeCount = new Map<string, number>();
+    if (friendIds.length) {
+      const friendLikes = await this.swipes.find({ where: { userId: In(friendIds), direction: SwipeDirection.LIKE } });
+      for (const swipe of friendLikes) friendLikeCount.set(swipe.movieId, (friendLikeCount.get(swipe.movieId) ?? 0) + 1);
+    }
+
+    // Кандидаты — непросмотренные фильмы
+    const candidates = await this.movies.find({
+      where: swipedIds.length ? { id: Not(In(swipedIds)) } : {},
+      relations: { genres: true, credits: true },
+    });
+
+    const scored = candidates.map((movie) => {
+      const genreScore = (movie.genres ?? []).reduce((sum, genre) => sum + (genreWeight.get(genre.name) ?? 0), 0);
+      const friendScore = friendLikeCount.get(movie.id) ?? 0;
+      const score = 3 * genreScore + 2 * friendScore + Number(movie.rating);
+      return { movie, score };
+    });
+    scored.sort((a, b) => b.score - a.score || Number(b.movie.rating) - Number(a.movie.rating));
+    return scored.slice(0, limit).map((entry) => this.toView(entry.movie));
   }
 
   async random(): Promise<MovieView> {
