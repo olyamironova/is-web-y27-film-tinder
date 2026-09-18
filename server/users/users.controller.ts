@@ -52,6 +52,7 @@ export class UsersController {
   }
 
   @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile' })
   updateProfile(@CurrentUser() user: AuthenticatedUser, @Body() input: UpdateProfileDto) {
     return this.users.updateProfile(user.id, input);
   }

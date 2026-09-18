@@ -82,6 +82,7 @@ export class MoviesApiController {
   @Public()
   @Get('random')
   @Header('Cache-Control', 'no-store')
+  @ApiOperation({ summary: 'Get a random movie' })
   @ApiOkResponse({ description: 'A random movie' })
   random() {
     return this.movies.random();
