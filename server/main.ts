@@ -43,9 +43,10 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port, '0.0.0.0');
-  Logger.log(`Film Tinder: http://localhost:${port}`, 'Bootstrap');
-  Logger.log(`Swagger: http://localhost:${port}/api/docs`, 'Bootstrap');
-  Logger.log(`GraphQL Sandbox: http://localhost:${port}/graphql`, 'Bootstrap');
+  const baseUrl = process.env.SUPERTOKENS_API_DOMAIN ?? `http://localhost:${port}`;
+  Logger.log(`Film Tinder: ${baseUrl}`, 'Bootstrap');
+  Logger.log(`Swagger: ${baseUrl}/api/docs`, 'Bootstrap');
+  Logger.log(`GraphQL Sandbox: ${baseUrl}/graphql`, 'Bootstrap');
 }
 
 void bootstrap();
