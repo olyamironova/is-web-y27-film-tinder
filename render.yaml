@@ -11,10 +11,20 @@ services:
         fromDatabase:
           name: film-tinder-db
           property: connectionString
-      - key: JWT_SECRET
-        generateValue: true
       - key: CORS_ORIGIN
         value: https://film-tinder.onrender.com
+      - key: SUPERTOKENS_CONNECTION_URI
+        sync: false
+      - key: SUPERTOKENS_API_KEY
+        sync: false
+      - key: SUPERTOKENS_APP_NAME
+        value: Film Tinder
+      - key: SUPERTOKENS_API_DOMAIN
+        value: https://film-tinder.onrender.com
+      - key: SUPERTOKENS_WEBSITE_DOMAIN
+        value: https://film-tinder.onrender.com
+      - key: SUPERTOKENS_API_BASE_PATH
+        value: /auth
 
 databases:
   - name: film-tinder-db

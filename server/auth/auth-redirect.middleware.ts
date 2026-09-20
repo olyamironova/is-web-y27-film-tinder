@@ -9,11 +9,12 @@ export class AuthRedirectMiddleware implements NestMiddleware {
   constructor(private readonly auth: AuthService) {}
 
   async use(request: AuthenticatedRequest, response: Response, next: NextFunction): Promise<void> {
-    const user = await this.auth.authenticateRequest(request);
-    if (!user) {
+    const session = await this.auth.resolveSession(request, response);
+    if (!session) {
       response.redirect('/login?next=/admin/movies');
       return;
     }
+    const user = await this.auth.getOrCreateLocalUser(session.getUserId());
     if (user.role !== UserRole.ADMIN) {
       response.status(403).send('Доступ разрешён только администратору');
       return;

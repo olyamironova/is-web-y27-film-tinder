@@ -1,86 +1,95 @@
-import { ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { compare, hash } from 'bcryptjs';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { Repository } from 'typeorm';
+import supertokens from 'supertokens-node';
+import EmailPassword from 'supertokens-node/recipe/emailpassword';
+import Session from 'supertokens-node/recipe/session';
+import type { SessionContainer } from 'supertokens-node/recipe/session';
+import UserMetadata from 'supertokens-node/recipe/usermetadata';
+import UserRoles from 'supertokens-node/recipe/userroles';
 import { AuthenticatedUser } from '../common/types/authenticated-request.js';
 import { User, UserRole } from '../users/entities/user.entity.js';
-import { LoginDto } from './dto/login.dto.js';
-import { RegisterDto } from './dto/register.dto.js';
-import { AUTH_OPTIONS } from './auth.types.js';
-import type { AuthModuleOptions, JwtPayload } from './auth.types.js';
+import { AUTH_OPTIONS, type AuthModuleOptions } from './auth.types.js';
+
+const DEFAULT_TENANT = 'public';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
-    private readonly jwtService: JwtService,
     @Inject(AUTH_OPTIONS) private readonly options: AuthModuleOptions,
   ) {}
 
-  async register(input: RegisterDto): Promise<{ token: string; user: AuthenticatedUser }> {
-    const email = input.email.trim().toLowerCase();
-    if (await this.users.exists({ where: { email } })) {
-      throw new ConflictException('Пользователь с таким email уже существует');
+  async getOrCreateLocalUser(userId: string): Promise<AuthenticatedUser> {
+    const existing = await this.users.findOne({ where: { id: userId } });
+    if (existing) {
+      return { id: existing.id, email: existing.email, name: existing.name, role: existing.role };
     }
 
-    const user = this.users.create({
-      email,
-      name: input.name.trim(),
-      passwordHash: await hash(input.password, 12),
-      role: UserRole.USER,
-    });
-    await this.users.save(user);
-    return this.issueToken(user);
+    const stUser = await supertokens.getUser(userId);
+    if (!stUser) throw new UnauthorizedException('Пользователь SuperTokens не найден');
+    const email = stUser.emails[0] ?? '';
+    const metadata = await UserMetadata.getUserMetadata(userId);
+    const name = typeof metadata.metadata.name === 'string' && metadata.metadata.name.trim()
+      ? (metadata.metadata.name as string).trim()
+      : email.split('@')[0];
+    const { roles } = await UserRoles.getRolesForUser(DEFAULT_TENANT, userId);
+    const role = roles.includes(this.options.adminRole) ? UserRole.ADMIN : UserRole.USER;
+
+    const created = await this.users.save(this.users.create({ id: userId, email, name, role }));
+    return { id: created.id, email: created.email, name: created.name, role: created.role };
   }
 
-  async login(input: LoginDto): Promise<{ token: string; user: AuthenticatedUser }> {
-    const user = await this.users.findOne({ where: { email: input.email.trim().toLowerCase() } });
-    if (!user || !(await compare(input.password, user.passwordHash))) {
-      throw new UnauthorizedException('Неверный email или пароль');
+  async resolveSession(request: Request, response: Response): Promise<SessionContainer | undefined> {
+    try {
+      return await Session.getSession(request, response, { sessionRequired: false });
+    } catch (error) {
+      if ((error as { type?: string })?.type !== 'TRY_REFRESH_TOKEN') {
+        this.clearStaleSessionCookies(response);
+      }
+      return undefined;
     }
-    return this.issueToken(user);
   }
 
-  async sessionUser(request: Request): Promise<(AuthenticatedUser & { avatarUrl: string }) | null> {
-    const authenticated = await this.authenticateRequest(request);
-    if (!authenticated) return null;
+  async sessionUser(request: Request, response: Response): Promise<(AuthenticatedUser & { avatarUrl: string }) | null> {
+    const session = await this.resolveSession(request, response);
+    if (!session) return null;
+    const authenticated = await this.getOrCreateLocalUser(session.getUserId());
     const user = await this.users.findOne({ where: { id: authenticated.id }, select: { avatarUrl: true } });
     return { ...authenticated, avatarUrl: user?.avatarUrl ?? '' };
   }
 
-  async authenticateRequest(request: Request): Promise<AuthenticatedUser | null> {
-    const header = request.headers.authorization;
-    const bearer = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
-    const cookieToken = (request.cookies as Record<string, string> | undefined)?.film_tinder_token;
-    const token = bearer ?? cookieToken;
-    if (!token) return null;
+  private clearStaleSessionCookies(response: Response): void {
+    response.clearCookie('sAccessToken', { path: '/' });
+    response.clearCookie('st-last-access-token-update', { path: '/' });
+    response.clearCookie('sRefreshToken', { path: '/auth/session/refresh' });
+  }
 
-    try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, { secret: this.options.secret });
-      return {
-        id: payload.sub,
-        email: payload.email,
-        name: payload.name,
-        role: payload.role as UserRole,
-      };
-    } catch {
-      return null;
+  async changePassword(userId: string, email: string, oldPassword: string, newPassword: string): Promise<void> {
+    const check = await EmailPassword.verifyCredentials(DEFAULT_TENANT, email, oldPassword);
+    if (check.status !== 'OK') {
+      throw new UnauthorizedException('Старый пароль указан неверно');
+    }
+    const result = await EmailPassword.updateEmailOrPassword({
+      recipeUserId: supertokens.convertToRecipeUserId(userId),
+      password: newPassword,
+    });
+    if (result.status === 'PASSWORD_POLICY_VIOLATED_ERROR') {
+      throw new UnauthorizedException(result.failureReason);
+    }
+    if (result.status !== 'OK') {
+      throw new UnauthorizedException('Не удалось обновить пароль');
     }
   }
 
-  private async issueToken(user: User): Promise<{ token: string; user: AuthenticatedUser }> {
-    const publicUser: AuthenticatedUser = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
-    const token = await this.jwtService.signAsync(
-      { sub: user.id, email: user.email, name: user.name, role: user.role } satisfies JwtPayload,
-      { secret: this.options.secret, expiresIn: this.options.expiresIn as JwtSignOptions['expiresIn'] },
-    );
-    return { token, user: publicUser };
+  async updateEmail(userId: string, email: string): Promise<'OK' | 'EMAIL_ALREADY_EXISTS' | 'NOT_ALLOWED'> {
+    const result = await EmailPassword.updateEmailOrPassword({
+      recipeUserId: supertokens.convertToRecipeUserId(userId),
+      email,
+    });
+    if (result.status === 'OK') return 'OK';
+    if (result.status === 'EMAIL_ALREADY_EXISTS_ERROR') return 'EMAIL_ALREADY_EXISTS';
+    return 'NOT_ALLOWED';
   }
 }

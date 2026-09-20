@@ -18,7 +18,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -97,7 +97,7 @@ export class MoviesApiController {
   }
 
   @Get('deck')
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @ApiOkResponse({ description: 'Swipe deck for the current user with already-swiped movies hidden' })
   deck(@CurrentUser() user: AuthenticatedUser) {
     return this.movies.recommendations(user.id, 100);
@@ -114,7 +114,7 @@ export class MoviesApiController {
 
   @Post()
   @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @ApiCreatedResponse({ description: 'Movie created' })
   create(@Body() input: CreateMovieDto) {
     return this.movies.create(input);
@@ -122,7 +122,7 @@ export class MoviesApiController {
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @ApiOkResponse({ description: 'Movie updated' })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() input: UpdateMovieDto) {
     return this.movies.update(id, input);
@@ -130,7 +130,7 @@ export class MoviesApiController {
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse({ description: 'Movie deleted' })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
@@ -138,7 +138,7 @@ export class MoviesApiController {
   }
 
   @Post(':id/swipes')
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @ApiCreatedResponse({ description: 'Swipe recorded or replaced' })
   swipe(
     @Param('id', ParseUUIDPipe) id: string,
@@ -149,7 +149,7 @@ export class MoviesApiController {
   }
 
   @Delete(':id/swipes')
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse({ description: 'Swipe removed, movie returns to the deck' })
   async removeSwipe(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser): Promise<void> {

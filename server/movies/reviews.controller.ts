@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { AuthenticatedUser } from '../common/types/authenticated-request.js';
@@ -19,7 +19,7 @@ export class ReviewsController {
   }
 
   @Post()
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @ApiOkResponse({ description: 'Create or update the current user review, returns the updated list' })
   upsert(
     @Param('movieId', ParseUUIDPipe) movieId: string,
@@ -30,7 +30,7 @@ export class ReviewsController {
   }
 
   @Delete()
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @ApiOkResponse({ description: 'Remove the current user review, returns the updated list' })
   remove(@Param('movieId', ParseUUIDPipe) movieId: string, @CurrentUser() user: AuthenticatedUser) {
     return this.reviews.remove(user.id, movieId);

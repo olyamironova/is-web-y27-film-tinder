@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
+import { Response } from 'express';
 import { IS_PUBLIC_KEY } from '../common/decorators/public.decorator.js';
 import { AuthenticatedRequest } from '../common/types/authenticated-request.js';
 import { AuthService } from './auth.service.js';
@@ -16,17 +17,20 @@ export class AuthGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const request = this.getRequest(context);
-    const user = await this.auth.authenticateRequest(request);
-    if (!user) throw new UnauthorizedException('Требуется аутентификация');
-    request.user = user;
+    const { req, res } = this.getRequestResponse(context);
+    const session = await this.auth.resolveSession(req, res);
+    if (!session) throw new UnauthorizedException('Требуется аутентификация');
+
+    req.user = await this.auth.getOrCreateLocalUser(session.getUserId());
     return true;
   }
 
-  private getRequest(context: ExecutionContext): AuthenticatedRequest {
+  private getRequestResponse(context: ExecutionContext): { req: AuthenticatedRequest; res: Response } {
     if (context.getType<string>() === 'http') {
-      return context.switchToHttp().getRequest<AuthenticatedRequest>();
+      const http = context.switchToHttp();
+      return { req: http.getRequest(), res: http.getResponse() };
     }
-    return GqlExecutionContext.create(context).getContext<{ req: AuthenticatedRequest }>().req;
+    const gql = GqlExecutionContext.create(context).getContext<{ req: AuthenticatedRequest; res: Response }>();
+    return { req: gql.req, res: gql.res };
   }
 }

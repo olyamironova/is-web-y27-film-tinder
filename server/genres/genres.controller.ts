@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { UserRole } from '../users/entities/user.entity.js';
@@ -19,21 +19,21 @@ export class GenresController {
 
   @Post()
   @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   create(@Body() input: GenreDto) {
     return this.genres.create(input.name);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() input: GenreDto) {
     return this.genres.update(id, input.name);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
+  @ApiCookieAuth('session')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.genres.remove(id);

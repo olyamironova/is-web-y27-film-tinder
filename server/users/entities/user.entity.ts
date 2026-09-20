@@ -4,7 +4,7 @@ import {
   CreateDateColumn,
   Entity,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
   type Relation,
 } from 'typeorm';
@@ -22,15 +22,12 @@ registerEnumType(UserRole, { name: 'UserRole' });
 @Entity('users')
 export class User {
   @Field(() => ID)
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id: string;
 
   @Field({ description: 'Unique login email' })
   @Column({ unique: true })
   email: string;
-
-  @Column({ name: 'password_hash' })
-  passwordHash: string;
 
   @Field({ description: 'Public display name' })
   @Column({ length: 80 })

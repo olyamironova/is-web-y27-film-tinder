@@ -1,45 +1,69 @@
 import 'reflect-metadata';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { Repository } from 'typeorm';
-import { User, UserRole } from '../users/entities/user.entity.js';
-import { AuthService } from './auth.service.js';
+import type { Repository } from 'typeorm';
 
-describe('AuthService', () => {
-  const records: User[] = [];
+const getUser = jest.fn<(userId: string) => Promise<unknown>>();
+const getUserMetadata = jest.fn<(userId: string) => Promise<{ metadata: Record<string, unknown> }>>();
+const getRolesForUser = jest.fn<(tenantId: string, userId: string) => Promise<{ roles: string[] }>>();
+
+jest.unstable_mockModule('supertokens-node', () => ({
+  default: { getUser, convertToRecipeUserId: (id: string) => ({ getAsString: () => id }) },
+}));
+jest.unstable_mockModule('supertokens-node/recipe/emailpassword', () => ({
+  default: { verifyCredentials: jest.fn(), updateEmailOrPassword: jest.fn() },
+}));
+jest.unstable_mockModule('supertokens-node/recipe/session', () => ({
+  default: { getSession: jest.fn() },
+}));
+jest.unstable_mockModule('supertokens-node/recipe/usermetadata', () => ({
+  default: { getUserMetadata, updateUserMetadata: jest.fn() },
+}));
+jest.unstable_mockModule('supertokens-node/recipe/userroles', () => ({
+  default: { getRolesForUser, addRoleToUser: jest.fn(), UserRoleClaim: {} },
+}));
+
+const { AuthService } = await import('./auth.service.js');
+const { User, UserRole } = await import('../users/entities/user.entity.js');
+
+describe('AuthService.getOrCreateLocalUser', () => {
+  const records: InstanceType<typeof User>[] = [];
   const repository = {
-    exists: jest.fn(async ({ where: { email } }: { where: { email: string } }) => records.some((user) => user.email === email)),
-    create: jest.fn((input: Partial<User>) => Object.assign(new User(), input)),
-    save: jest.fn(async (user: User) => {
-      if (!user.id) user.id = `00000000-0000-4000-8000-${String(records.length + 1).padStart(12, '0')}`;
-      user.createdAt ??= new Date();
-      user.updatedAt ??= new Date();
+    findOne: jest.fn(async ({ where: { id } }: { where: { id: string } }) => records.find((u) => u.id === id) ?? null),
+    findOneOrFail: jest.fn(async ({ where: { id } }: { where: { id: string } }) => records.find((u) => u.id === id)!),
+    create: jest.fn((input: Partial<InstanceType<typeof User>>) => Object.assign(new User(), input)),
+    save: jest.fn(async (user: InstanceType<typeof User>) => {
       if (!records.includes(user)) records.push(user);
       return user;
     }),
-    findOne: jest.fn(async ({ where: { email } }: { where: { email: string } }) => records.find((user) => user.email === email) ?? null),
-  } as unknown as Repository<User>;
-  const service = new AuthService(repository, new JwtService(), {
-    secret: 'test-secret-with-more-than-thirty-two-characters',
-    expiresIn: '1h',
-  });
+  } as unknown as Repository<InstanceType<typeof User>>;
+
+  const options = { adminRole: 'admin', userRole: 'user' } as never;
+  const service = new AuthService(repository, options);
 
   beforeEach(() => {
     records.length = 0;
     jest.clearAllMocks();
   });
 
-  it('registers, normalizes email and issues a verifiable token', async () => {
-    const result = await service.register({ email: ' User@Example.COM ', name: 'User', password: 'StrongPass123!' });
-    expect(result.user.email).toBe('user@example.com');
-    expect(result.user.role).toBe(UserRole.USER);
-    expect(await service.authenticateRequest({ headers: { authorization: `Bearer ${result.token}` } } as never)).toEqual(result.user);
+  it('returns the existing local user without querying SuperTokens', async () => {
+    records.push(Object.assign(new User(), {
+      id: 'u-1', email: 'user@example.com', name: 'Киноман', role: UserRole.USER,
+    }));
+
+    const result = await service.getOrCreateLocalUser('u-1');
+
+    expect(result).toEqual({ id: 'u-1', email: 'user@example.com', name: 'Киноман', role: UserRole.USER });
+    expect(getUser).not.toHaveBeenCalled();
   });
 
-  it('rejects duplicate registration and a wrong password', async () => {
-    await service.register({ email: 'user@example.com', name: 'User', password: 'StrongPass123!' });
-    await expect(service.register({ email: 'USER@example.com', name: 'Other', password: 'StrongPass123!' })).rejects.toBeInstanceOf(ConflictException);
-    await expect(service.login({ email: 'user@example.com', password: 'wrong' })).rejects.toBeInstanceOf(UnauthorizedException);
+  it('materializes a new local user from SuperTokens data and maps the admin role', async () => {
+    getUser.mockResolvedValue({ id: 'st-42', emails: ['admin@example.com'] });
+    getUserMetadata.mockResolvedValue({ metadata: { name: 'Администратор' } });
+    getRolesForUser.mockResolvedValue({ roles: ['admin'] });
+
+    const result = await service.getOrCreateLocalUser('st-42');
+
+    expect(result).toEqual({ id: 'st-42', email: 'admin@example.com', name: 'Администратор', role: UserRole.ADMIN });
+    expect(records).toHaveLength(1);
   });
 });

@@ -9,20 +9,65 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
+async function rawFetch(path: string, options: RequestInit): Promise<Response> {
+  return fetch(path, {
     credentials: 'include',
     ...options,
     headers: options.body instanceof FormData
       ? options.headers
       : { 'Content-Type': 'application/json', ...options.headers },
   });
+}
+
+async function refreshSession(): Promise<boolean> {
+  const response = await fetch('/auth/session/refresh', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { rid: 'session' },
+  });
+  return response.ok;
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  let response = await rawFetch(path, options);
+  if (response.status === 401 && (await refreshSession())) {
+    response = await rawFetch(path, options);
+  }
   if (!response.ok) {
     const body = await response.json().catch(() => ({ message: response.statusText }));
     throw new ApiError(response.status, Array.isArray(body.message) ? body.message.join('; ') : body.message);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+interface FormFieldError {
+  id: string;
+  error: string;
+}
+
+interface SupertokensAuthResponse {
+  status: string;
+  message?: string;
+  formFields?: FormFieldError[];
+}
+
+async function authRequest(path: string, formFields: { id: string; value: string }[]): Promise<void> {
+  const response = await fetch(path, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', rid: 'emailpassword' },
+    body: JSON.stringify({ formFields }),
+  });
+  const body = (await response.json().catch(() => ({ status: 'GENERAL_ERROR' }))) as SupertokensAuthResponse;
+  if (body.status === 'OK') return;
+  if (body.status === 'WRONG_CREDENTIALS_ERROR') {
+    throw new ApiError(401, 'Неверный email или пароль');
+  }
+  if (body.status === 'FIELD_ERROR') {
+    throw new ApiError(400, (body.formFields ?? []).map((field) => field.error).join('; ') || 'Проверьте введённые данные');
+  }
+  throw new ApiError(response.status || 400, body.message ?? 'Не удалось выполнить запрос');
 }
 
 export const api = {
@@ -64,13 +109,16 @@ export const api = {
   roomSwipe: (code: string, movieId: string, direction: 'like' | 'dislike') =>
     request<{ matched: boolean }>(`/api/rooms/${code}/swipe`, { method: 'POST', body: JSON.stringify({ movieId, direction }) }),
   removeSwipe: (movieId: string) => request<void>(`/api/movies/${movieId}/swipes`, { method: 'DELETE' }),
-  login: (email: string, password: string) => request<{ user: SessionUser }>('/api/auth/login', {
-    method: 'POST', body: JSON.stringify({ email, password }),
-  }),
-  register: (email: string, name: string, password: string) => request<{ user: SessionUser }>('/api/auth/register', {
-    method: 'POST', body: JSON.stringify({ email, name, password }),
-  }),
-  logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
+  login: (email: string, password: string) => authRequest('/auth/signin', [
+    { id: 'email', value: email },
+    { id: 'password', value: password },
+  ]),
+  register: (email: string, name: string, password: string) => authRequest('/auth/signup', [
+    { id: 'email', value: email },
+    { id: 'password', value: password },
+    { id: 'name', value: name },
+  ]),
+  logout: () => fetch('/auth/signout', { method: 'POST', credentials: 'include', headers: { rid: 'session' } }).then(() => undefined),
   updateProfile: (input: { name: string; email: string }) => request<User>('/api/users/me', {
     method: 'PATCH', body: JSON.stringify(input),
   }),

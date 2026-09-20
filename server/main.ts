@@ -7,7 +7,9 @@ import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import { join } from 'path';
 import hbs from 'hbs';
+import supertokens from 'supertokens-node';
 import { AppModule } from './app.module.js';
+import { SupertokensExceptionFilter } from './auth/supertokens-exception.filter.js';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter.js';
 
 async function bootstrap(): Promise<void> {
@@ -24,18 +26,18 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({
     origin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(',').map((origin) => origin.trim()),
+    allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
     credentials: true,
-    exposedHeaders: ['Link', 'ETag', 'X-Elapsed-Time'],
+    exposedHeaders: ['Link', 'ETag', 'X-Elapsed-Time', ...supertokens.getAllCORSHeaders()],
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalFilters(new SupertokensExceptionFilter(), new GlobalExceptionFilter());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Film Tinder API')
     .setDescription('REST API for movies, swipes, friendships, profiles and administration')
     .setVersion('1.0')
-    .addBearerAuth()
-    .addCookieAuth('film_tinder_token', { type: 'apiKey', in: 'cookie' }, 'session')
+    .addCookieAuth('sAccessToken', { type: 'apiKey', in: 'cookie' }, 'session')
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swaggerConfig));
 

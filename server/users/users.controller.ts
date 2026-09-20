@@ -20,7 +20,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { PaginationQueryDto } from '../common/dto.js';
@@ -34,7 +34,7 @@ import { UserRole } from './entities/user.entity.js';
 import { UsersService } from './users.service.js';
 
 @ApiTags('users')
-@ApiBearerAuth()
+@ApiCookieAuth('session')
 @Controller('api/users')
 export class UsersController {
   constructor(private readonly users: UsersService, private readonly friendEvents: FriendEventsService) {}

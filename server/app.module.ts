@@ -15,6 +15,7 @@ import { InitialSchema1760000000000 } from './database/migrations/1760000000000-
 import { AddWatchLater1760000001000 } from './database/migrations/1760000001000-add-watch-later.js';
 import { AddReviews1760000002000 } from './database/migrations/1760000002000-add-reviews.js';
 import { AddAvatarHistory1760000003000 } from './database/migrations/1760000003000-add-avatar-history.js';
+import { SupertokensAuth1760000004000 } from './database/migrations/1760000004000-supertokens-auth.js';
 import { GenresModule } from './genres/genres.module.js';
 import { Genre } from './genres/genre.entity.js';
 import { Credit } from './movies/entities/credit.entity.js';
@@ -37,7 +38,7 @@ import { UsersModule } from './users/users.module.js';
         type: 'postgres' as const,
         url: config.get<string>('DATABASE_URL', 'postgresql://film_tinder:film_tinder@localhost:5432/film_tinder'),
         entities: [User, Movie, Genre, Credit, Swipe, Friendship, Review],
-        migrations: [InitialSchema1760000000000, AddWatchLater1760000001000, AddReviews1760000002000, AddAvatarHistory1760000003000],
+        migrations: [InitialSchema1760000000000, AddWatchLater1760000001000, AddReviews1760000002000, AddAvatarHistory1760000003000, SupertokensAuth1760000004000],
         migrationsRun: true,
         synchronize: false,
         ssl: config.get<string>('DATABASE_SSL') === 'true' ? { rejectUnauthorized: false } : false,
@@ -48,8 +49,14 @@ import { UsersModule } from './users/users.module.js';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'development-secret-change-me-please-32-chars'),
-        expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d'),
+        appName: config.get<string>('SUPERTOKENS_APP_NAME', 'Film Tinder'),
+        apiDomain: config.get<string>('SUPERTOKENS_API_DOMAIN', 'http://localhost:3000'),
+        websiteDomain: config.get<string>('SUPERTOKENS_WEBSITE_DOMAIN', 'http://localhost:5173'),
+        connectionUri: config.get<string>('SUPERTOKENS_CONNECTION_URI', 'http://localhost:3567'),
+        apiKey: config.get<string>('SUPERTOKENS_API_KEY') || undefined,
+        apiBasePath: config.get<string>('SUPERTOKENS_API_BASE_PATH', '/auth'),
+        adminRole: config.get<string>('SUPERTOKENS_ADMIN_ROLE', 'admin'),
+        userRole: config.get<string>('SUPERTOKENS_USER_ROLE', 'user'),
       }),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({

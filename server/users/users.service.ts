@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { compare, hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
+import { AuthService } from '../auth/auth.service.js';
 import { MoviesService } from '../movies/movies.service.js';
 import { ObjectStorageService } from '../storage/object-storage.service.js';
 import { FriendEventsService } from './friend-events.service.js';
@@ -18,6 +18,7 @@ export class UsersService {
     private readonly movies: MoviesService,
     private readonly storage: ObjectStorageService,
     private readonly friendEvents: FriendEventsService,
+    private readonly auth: AuthService,
   ) {}
 
   async profile(id: string) {
@@ -136,6 +137,9 @@ export class UsersService {
     if (input.email && input.email.toLowerCase() !== user.email) {
       const email = input.email.trim().toLowerCase();
       if (await this.users.exists({ where: { email } })) throw new ConflictException('Email уже используется');
+      const result = await this.auth.updateEmail(id, email);
+      if (result === 'EMAIL_ALREADY_EXISTS') throw new ConflictException('Email уже используется');
+      if (result === 'NOT_ALLOWED') throw new BadRequestException('Смена email недоступна');
       user.email = email;
     }
     if (input.name) user.name = input.name.trim();
@@ -145,11 +149,7 @@ export class UsersService {
 
   async changePassword(id: string, input: ChangePasswordDto): Promise<void> {
     const user = await this.findOne(id);
-    if (!(await compare(input.oldPassword, user.passwordHash))) {
-      throw new UnauthorizedException('Старый пароль указан неверно');
-    }
-    user.passwordHash = await hash(input.newPassword, 12);
-    await this.users.save(user);
+    await this.auth.changePassword(id, user.email, input.oldPassword, input.newPassword);
   }
 
   async setAvatar(id: string, file: Express.Multer.File) {

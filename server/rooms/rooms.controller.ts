@@ -1,5 +1,5 @@
 import { Body, Controller, Get, MessageEvent, Param, Post, Sse } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { AuthenticatedUser } from '../common/types/authenticated-request.js';
@@ -7,7 +7,7 @@ import { RoomSwipeDto } from './dto/room-swipe.dto.js';
 import { RoomsService } from './rooms.service.js';
 
 @ApiTags('rooms')
-@ApiBearerAuth()
+@ApiCookieAuth('session')
 @Controller('api/rooms')
 export class RoomsController {
   constructor(private readonly rooms: RoomsService) {}

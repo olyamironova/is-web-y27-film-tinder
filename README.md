@@ -26,13 +26,15 @@
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres
+docker compose up -d postgres supertokens
 pnpm install
 pnpm build
 pnpm start
 ```
 
-После первого запуска миграция создаст схему, а idempotent seed добавит стартовый каталог и две учётные записи:
+`docker compose` поднимает PostgreSQL и **SuperTokens Core** (self-hosted, `http://localhost:3567`) — это сервер аутентификации. Учётными данными и сессиями управляет SuperTokens; приложение хранит лишь доменный профиль.
+
+После первого запуска миграция создаст схему, а idempotent seed зарегистрирует в SuperTokens и добавит в базу две учётные записи:
 
 - пользователь: `user@film-tinder.local` / `User12345!`;
 - администратор: `admin@film-tinder.local` / `ChangeMe123!` (значения меняются через `ADMIN_EMAIL` и `ADMIN_PASSWORD`).
@@ -51,7 +53,7 @@ pnpm start:dev
 pnpm dev
 ```
 
-Vite работает на `5173` и проксирует `/api`, `/graphql`, `/uploads` на NestJS (`3000`).
+Vite работает на `5173` и проксирует `/api`, `/auth`, `/graphql`, `/uploads` на NestJS (`3000`).
 
 ## Реализация
 
@@ -61,7 +63,7 @@ Vite работает на `5173` и проксирует `/api`, `/graphql`, `/
 4. REST CRUD, DTO-валидация, единый exception filter, пагинация и `Link`, Swagger с auth-схемами.
 5. Code-first GraphQL: запросы, предметные мутации, nested field resolvers, пагинация и лимит сложности 100.
 6. `X-Elapsed-Time`, серверный in-memory cache каталога, `ETag` + `Cache-Control`, загрузка аватара в S3-compatible storage или локально в development.
-7. Динамический `AuthModule`, JWT в HttpOnly cookie или Bearer header, глобальные auth/role guards, redirect middleware для MVC, роли `user` и `admin`, регистрация/вход/выход и профиль.
+7. Аутентификация и авторизация на **SuperTokens**: динамический `AuthModule.forRootAsync` (конфигурация из env инициализирует SDK), рецепты EmailPassword + Session + UserRoles + UserMetadata, глобальный `AuthGuard` (`Session.getSession`) + `RolesGuard`, декоратор `@Public()` (роль `@PublicAccess` из методички), middleware SuperTokens на `/auth/*` и redirect-middleware для MVC-панели, роли `user`/`admin`, cookie-схема в Swagger, связывание `userId` SuperTokens с доменным профилем. Регистрация/вход/выход обслуживает SuperTokens (`/auth/signup`, `/auth/signin`, `/auth/signout`).
 
 ## Доменная модель
 
@@ -131,7 +133,8 @@ erDiagram
 
 Главные группы маршрутов:
 
-- `/api/auth` — регистрация, вход, выход, текущая сессия;
+- `/auth/*` — маршруты SuperTokens: `signup`, `signin`, `signout`, `session/refresh` и др.;
+- `/api/auth` — текущий пользователь сессии (`me`, `session`);
 - `/api/movies` — каталог с фильтрами (`search`, `genre`, `yearFrom`, `yearTo`), CRUD, `deck` (персональная лента), `recommendations`, `random`, свайпы и их отмена, SSE каталога, отзывы `/:id/reviews`;
 - `/api/genres` — справочник жанров;
 - `/api/users` — профиль, пароль, аватар (загрузка / выбор / удаление из истории), друзья (заявки / принять / удалить), списки `me/likes` · `me/dislikes` · `me/watchlist`, лайки друга `/:id/likes` и мэтчи `/:id/matches`, SSE-уведомления `me/notifications`;
@@ -158,7 +161,7 @@ PostgreSQL smoke test: после запуска проверить `/api/health
 
 ## Ограничения
 
-- Для production обязательно заменить `JWT_SECRET` и пароль администратора (`ADMIN_PASSWORD`).
+- Для production используйте Managed SuperTokens Core (`SUPERTOKENS_CONNECTION_URI` + `SUPERTOKENS_API_KEY`) и обязательно смените пароль администратора (`ADMIN_PASSWORD`).
 - Рекомендации — прозрачная эвристика (жанры лайков + лайки друзей + рейтинг), не ML-рекомендер.
 - Комнаты кино-вечера хранятся в памяти процесса: не переживают перезапуск/передеплой и работают в рамках одного инстанса (для сценария «на вечер» этого достаточно).
 - Для production-загрузок требуется внешний S3 bucket; локальный fallback на Render не персистентен.

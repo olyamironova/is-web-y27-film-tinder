@@ -1,12 +1,19 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
+import supertokens from 'supertokens-node';
+import EmailPassword from 'supertokens-node/recipe/emailpassword';
+import UserMetadata from 'supertokens-node/recipe/usermetadata';
+import UserRoles from 'supertokens-node/recipe/userroles';
+import { AUTH_OPTIONS, type AuthModuleOptions } from '../auth/auth.types.js';
+import { ensureRolesExist } from '../auth/supertokens.js';
 import { MoviesService } from '../movies/movies.service.js';
 import { Friendship, FriendshipStatus } from '../users/entities/friendship.entity.js';
 import { User, UserRole } from '../users/entities/user.entity.js';
 import { SEED_MOVIE_MEDIA } from './seed-movie-media.js';
+
+const DEFAULT_TENANT = 'public';
 
 const SEED_MOVIES = [
   ['Интерстеллар', 2014, 8.6, ['Фантастика', 'Драма', 'Приключения'], 'Кристофер Нолан', ['Мэттью Макконахи', 'Энн Хэтэуэй']],
@@ -28,6 +35,7 @@ export class SeedService implements OnApplicationBootstrap {
     @InjectRepository(Friendship) private readonly friendships: Repository<Friendship>,
     private readonly movies: MoviesService,
     private readonly config: ConfigService,
+    @Inject(AUTH_OPTIONS) private readonly authOptions: AuthModuleOptions,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -71,29 +79,17 @@ export class SeedService implements OnApplicationBootstrap {
   }
 
   private async seedUsers(): Promise<void> {
+    await ensureRolesExist(this.authOptions);
+
     const adminEmail = this.config.get<string>('ADMIN_EMAIL', 'admin@film-tinder.local').toLowerCase();
     const adminPassword = this.config.get<string>('ADMIN_PASSWORD', 'ChangeMe123!');
-    let admin = await this.users.findOne({ where: { email: adminEmail } });
-    if (!admin) {
-      admin = await this.users.save(this.users.create({
-        email: adminEmail,
-        name: 'Администратор',
-        passwordHash: await hash(adminPassword, 12),
-        role: UserRole.ADMIN,
-      }));
-      this.logger.warn('Создан администратор из ADMIN_EMAIL/ADMIN_PASSWORD; смените пароль после первого запуска');
-    }
+    const adminId = await this.ensureSupertokensUser(adminEmail, adminPassword, 'Администратор', this.authOptions.adminRole);
+    const admin = await this.upsertLocalUser(adminId, adminEmail, 'Администратор', UserRole.ADMIN);
 
     const demoEmail = 'user@film-tinder.local';
-    let demo = await this.users.findOne({ where: { email: demoEmail } });
-    if (!demo) {
-      demo = await this.users.save(this.users.create({
-        email: demoEmail,
-        name: 'Киноман',
-        passwordHash: await hash('User12345!', 12),
-        role: UserRole.USER,
-      }));
-    }
+    const demoId = await this.ensureSupertokensUser(demoEmail, 'User12345!', 'Киноман', this.authOptions.userRole);
+    const demo = await this.upsertLocalUser(demoId, demoEmail, 'Киноман', UserRole.USER);
+
     const friendshipExists = await this.friendships.exists({ where: { requesterId: admin.id, addresseeId: demo.id } });
     if (!friendshipExists) {
       await this.friendships.save(this.friendships.create({
@@ -102,5 +98,47 @@ export class SeedService implements OnApplicationBootstrap {
         status: FriendshipStatus.ACCEPTED,
       }));
     }
+  }
+
+  private async ensureSupertokensUser(email: string, password: string, name: string, role: string): Promise<string> {
+    let userId: string | undefined;
+    const existing = await supertokens.listUsersByAccountInfo(DEFAULT_TENANT, { email });
+    if (existing.length > 0) {
+      userId = existing[0].id;
+    } else {
+      const created = await EmailPassword.signUp(DEFAULT_TENANT, email, password);
+      if (created.status === 'OK') {
+        userId = created.user.id;
+        if (role === this.authOptions.adminRole) {
+          this.logger.warn('Создан администратор из ADMIN_EMAIL/ADMIN_PASSWORD; смените пароль после первого запуска');
+        }
+      } else {
+        const raced = await supertokens.listUsersByAccountInfo(DEFAULT_TENANT, { email });
+        userId = raced[0]?.id;
+      }
+    }
+    if (!userId) throw new Error(`Не удалось создать пользователя SuperTokens: ${email}`);
+
+    await UserMetadata.updateUserMetadata(userId, { name });
+    await UserRoles.addRoleToUser(DEFAULT_TENANT, userId, role);
+    return userId;
+  }
+
+  private async upsertLocalUser(id: string, email: string, name: string, role: UserRole): Promise<User> {
+    const byId = await this.users.findOne({ where: { id } });
+    if (byId) {
+      byId.email = email;
+      byId.name = name;
+      byId.role = role;
+      return this.users.save(byId);
+    }
+
+    const byEmail = await this.users.findOne({ where: { email } });
+    if (byEmail && byEmail.id !== id) {
+      await this.users.delete({ id: byEmail.id });
+      this.logger.warn(`Удалена несовместимая учётная запись ${email} со старым идентификатором ${byEmail.id}`);
+    }
+
+    return this.users.save(this.users.create({ id, email, name, role }));
   }
 }
