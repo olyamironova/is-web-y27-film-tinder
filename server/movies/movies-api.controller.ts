@@ -90,6 +90,7 @@ export class MoviesApiController {
 
   @Public()
   @Get('recommendations')
+  @ApiOperation({ summary: 'Get rating-ranked unseen movies for a guest' })
   @ApiOkResponse({ description: 'Rating-ranked unseen movies for a guest' })
   recommendations(@Query('limit') limit?: string) {
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 20));
@@ -98,6 +99,7 @@ export class MoviesApiController {
 
   @Get('deck')
   @ApiCookieAuth('session')
+  @ApiOperation({ summary: 'Get the swipe deck for the current user' })
   @ApiOkResponse({ description: 'Swipe deck for the current user with already-swiped movies hidden' })
   deck(@CurrentUser() user: AuthenticatedUser) {
     return this.movies.recommendations(user.id, 100);
@@ -107,6 +109,7 @@ export class MoviesApiController {
   @Get(':id')
   @Header('Cache-Control', 'public, max-age=60')
   @UseInterceptors(EtagInterceptor)
+  @ApiOperation({ summary: 'Get a single movie by id' })
   @ApiOkResponse({ description: 'Movie details' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.movies.findOne(id);
@@ -115,6 +118,7 @@ export class MoviesApiController {
   @Post()
   @Roles(UserRole.ADMIN)
   @ApiCookieAuth('session')
+  @ApiOperation({ summary: 'Create a new movie (admin only)' })
   @ApiCreatedResponse({ description: 'Movie created' })
   create(@Body() input: CreateMovieDto) {
     return this.movies.create(input);
@@ -123,6 +127,7 @@ export class MoviesApiController {
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   @ApiCookieAuth('session')
+  @ApiOperation({ summary: 'Update an existing movie (admin only)' })
   @ApiOkResponse({ description: 'Movie updated' })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() input: UpdateMovieDto) {
     return this.movies.update(id, input);
@@ -132,6 +137,7 @@ export class MoviesApiController {
   @Roles(UserRole.ADMIN)
   @ApiCookieAuth('session')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a movie (admin only)' })
   @ApiNoContentResponse({ description: 'Movie deleted' })
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.movies.remove(id);
@@ -139,6 +145,7 @@ export class MoviesApiController {
 
   @Post(':id/swipes')
   @ApiCookieAuth('session')
+  @ApiOperation({ summary: 'Record or replace a swipe on a movie' })
   @ApiCreatedResponse({ description: 'Swipe recorded or replaced' })
   swipe(
     @Param('id', ParseUUIDPipe) id: string,
@@ -151,6 +158,7 @@ export class MoviesApiController {
   @Delete(':id/swipes')
   @ApiCookieAuth('session')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove a swipe so the movie returns to the deck' })
   @ApiNoContentResponse({ description: 'Swipe removed, movie returns to the deck' })
   async removeSwipe(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser): Promise<void> {
     await this.movies.removeSwipe(user.id, id);
