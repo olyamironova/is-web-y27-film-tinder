@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Redirect, Render } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { CreateMovieDto } from '../movies/dto/create-movie.dto.js';
 import { MoviesService } from '../movies/movies.service.js';
@@ -16,6 +17,7 @@ interface MovieFormBody {
   cast: string;
 }
 
+@ApiTags('admin')
 @Controller('admin/movies')
 @Roles(UserRole.ADMIN)
 export class AdminController {
@@ -23,6 +25,7 @@ export class AdminController {
 
   @Get()
   @Render('movies/index')
+  @ApiOperation({ summary: 'Render the admin movie management page' })
   async index(@Query('session') session?: string) {
     const page = await this.movies.findPage(1, 100);
     const user = session === 'guest' ? undefined : { name: 'Администратор' };
@@ -31,18 +34,21 @@ export class AdminController {
 
   @Get('add')
   @Render('movies/form')
+  @ApiOperation({ summary: 'Render the create-movie form' })
   add() {
     return { title: 'Добавить фильм', movie: {}, action: '/admin/movies', user: { name: 'Администратор' } };
   }
 
   @Post()
   @Redirect('/admin/movies')
+  @ApiOperation({ summary: 'Create a movie from the admin form' })
   async create(@Body() body: MovieFormBody) {
     await this.movies.create(this.fromForm(body));
   }
 
   @Get(':id/edit')
   @Render('movies/form')
+  @ApiOperation({ summary: 'Render the edit-movie form' })
   async edit(@Param('id', ParseUUIDPipe) id: string) {
     const movie = await this.movies.findOne(id);
     return {
@@ -55,12 +61,14 @@ export class AdminController {
 
   @Post(':id/update')
   @Redirect('/admin/movies')
+  @ApiOperation({ summary: 'Update a movie from the admin form' })
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() body: MovieFormBody) {
     await this.movies.update(id, this.fromForm(body));
   }
 
   @Post(':id/delete')
   @Redirect('/admin/movies')
+  @ApiOperation({ summary: 'Delete a movie from the admin panel' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.movies.remove(id);
   }
