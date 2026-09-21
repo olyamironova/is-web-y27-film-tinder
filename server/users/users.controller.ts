@@ -40,7 +40,6 @@ export class UsersController {
   constructor(private readonly users: UsersService, private readonly friendEvents: FriendEventsService) {}
 
   @Get('me')
-  @ApiOperation({ summary: 'Get the current user profile with likes and friends' })
   @ApiOkResponse({ description: 'Current user profile with likes and friends' })
   profile(@CurrentUser() user: AuthenticatedUser) {
     return this.users.profile(user.id);
@@ -60,7 +59,6 @@ export class UsersController {
 
   @Patch('me/password')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Change the current user password' })
   async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() input: ChangePasswordDto): Promise<void> {
     await this.users.changePassword(user.id, input);
   }
@@ -68,7 +66,6 @@ export class UsersController {
   @Post('me/avatar')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload a new avatar image for the current user' })
   uploadAvatar(
     @CurrentUser() user: AuthenticatedUser,
     @UploadedFile(new ParseFilePipe({
@@ -82,69 +79,59 @@ export class UsersController {
   }
 
   @Patch('me/avatar')
-  @ApiOperation({ summary: 'Select a previously uploaded avatar as current' })
   @ApiOkResponse({ description: 'Select a previously uploaded avatar as current' })
   selectAvatar(@CurrentUser() user: AuthenticatedUser, @Body() input: AvatarUrlDto) {
     return this.users.selectAvatar(user.id, input.url);
   }
 
   @Delete('me/avatar')
-  @ApiOperation({ summary: 'Delete an avatar from history and storage' })
   @ApiOkResponse({ description: 'Delete an avatar from history and storage' })
   deleteAvatar(@CurrentUser() user: AuthenticatedUser, @Body() input: AvatarUrlDto) {
     return this.users.deleteAvatar(user.id, input.url);
   }
 
   @Get('me/likes')
-  @ApiOperation({ summary: 'List movies the current user liked' })
   @ApiOkResponse({ description: 'Movies the current user liked' })
   likedMovies(@CurrentUser() user: AuthenticatedUser) {
     return this.users.likes(user.id);
   }
 
   @Get('me/dislikes')
-  @ApiOperation({ summary: 'List movies the current user disliked' })
   @ApiOkResponse({ description: 'Movies the current user disliked' })
   dislikedMovies(@CurrentUser() user: AuthenticatedUser) {
     return this.users.dislikes(user.id);
   }
 
   @Get('me/watchlist')
-  @ApiOperation({ summary: 'List movies the current user saved to watch later' })
   @ApiOkResponse({ description: 'Movies the current user saved to watch later' })
   watchlist(@CurrentUser() user: AuthenticatedUser) {
     return this.users.watchlist(user.id);
   }
 
   @Get(':id/likes')
-  @ApiOperation({ summary: 'List movies a friend liked' })
   @ApiOkResponse({ description: 'Movies a friend liked' })
   friendLikes(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.users.friendLikes(user.id, id);
   }
 
   @Get(':id/matches')
-  @ApiOperation({ summary: 'List movies both the current user and a friend liked' })
   @ApiOkResponse({ description: 'Movies both the current user and the friend liked (matches)' })
   matches(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.users.matchesWith(user.id, id);
   }
 
   @Post('me/friends')
-  @ApiOperation({ summary: 'Send a friend request by email' })
   requestFriend(@CurrentUser() user: AuthenticatedUser, @Body() input: CreateFriendshipDto) {
     return this.users.requestFriend(user.id, input.email);
   }
 
   @Patch('me/friends/:id/accept')
-  @ApiOperation({ summary: 'Accept an incoming friend request' })
   acceptFriend(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.users.acceptFriend(user.id, id);
   }
 
   @Delete('me/friends/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Reject incoming, cancel outgoing, or remove a friend' })
   @ApiOkResponse({ description: 'Reject incoming, cancel outgoing, or remove a friend' })
   async removeFriend(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.users.removeFriendship(user.id, id);
@@ -152,7 +139,6 @@ export class UsersController {
 
   @Get()
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'List all users with pagination (admin only)' })
   findAll(@Query() query: PaginationQueryDto) {
     return this.users.findAll(query.page, query.limit);
   }

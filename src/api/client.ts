@@ -19,26 +19,13 @@ async function rawFetch(path: string, options: RequestInit): Promise<Response> {
   });
 }
 
-let refreshInFlight: Promise<boolean> | null = null;
-
 async function refreshSession(): Promise<boolean> {
-  if (!refreshInFlight) {
-    refreshInFlight = (async () => {
-      try {
-        const response = await fetch('/auth/session/refresh', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { rid: 'session' },
-        });
-        return response.ok;
-      } catch {
-        return false;
-      } finally {
-        refreshInFlight = null;
-      }
-    })();
-  }
-  return refreshInFlight;
+  const response = await fetch('/auth/session/refresh', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { rid: 'session' },
+  });
+  return response.ok;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
